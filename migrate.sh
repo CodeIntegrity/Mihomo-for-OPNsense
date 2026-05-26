@@ -304,67 +304,84 @@ fi
 # ── 9. 校验合成结果 ──
 log_info "校验合成配置..."
 
-# 使用 PHP 公共库进行 merge + validate（如果 PHP 可用）
-php -r '
-require_once "/usr/local/www/includes/mihomo_lib.inc.php";
-$base = file_exists(MIHOMO_BASE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_BASE_YAML)) : [];
-$override = file_exists(MIHOMO_OVERRIDE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_OVERRIDE_YAML)) : [];
-$pf = MIHOMO_PROFILES_DIR . "/'"$LEGACY_PROFILE"'.yaml";
-$profile = file_exists($pf) ? mihomoYamlParse(file_get_contents($pf)) : [];
-$merged = mergeAll($base, $override, $profile);
-$yaml = mihomoYamlDump($merged);
-$tmp = "/tmp/config.yaml.migrate";
-file_put_contents($tmp, $yaml, LOCK_EX);
-$output = [];
-$rc = 0;
-exec("/usr/local/bin/mihomo -d " . escapeshellarg(MIHOMO_DIR) . " -t -f " . escapeshellarg($tmp) . " 2>&1", $output, $rc);
-unlink($tmp);
-if ($rc === 0) {
-    echo "VALID";
-} else {
-    echo "INVALID:" . implode("\n", $output);
-}
-' 2>/dev/null
+VALIDATION_OK=0
 
-VALIDATE_RC=$?
+# 检查 PHP 是否可用
+if command -v php >/dev/null 2>&1 && [ -f /usr/local/www/includes/mihomo_lib.inc.php ]; then
+	log_info "使用 PHP 进行合成校验..."
 
-if [ "$VALIDATE_RC" != "0" ] || php -r 'exit(0);' 2>/dev/null; then
-    # PHP validation not available, try direct mihomo -t on synthesized config
-    log_warn "PHP 校验不可用，尝试直接校验合成..."
+	VALIDATION_RESULT=$(php -r '
+	require_once "/usr/local/www/includes/mihomo_lib.inc.php";
+	$base = file_exists(MIHOMO_BASE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_BASE_YAML)) : [];
+	$override = file_exists(MIHOMO_OVERRIDE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_OVERRIDE_YAML)) : [];
+	$pf = MIHOMO_PROFILES_DIR . "/'"$LEGACY_PROFILE"'.yaml";
+	$profile = file_exists($pf) ? mihomoYamlParse(file_get_contents($pf)) : [];
+	$merged = mergeAll($base, $override, $profile);
+	$yaml = mihomoYamlDump($merged);
+	$tmp = "/tmp/config.yaml.migrate";
+	file_put_contents($tmp, $yaml, LOCK_EX);
+	$output = [];
+	$rc = 0;
+	exec("/usr/local/bin/mihomo -d " . escapeshellarg(MIHOMO_DIR) . " -t -f " . escapeshellarg($tmp) . " 2>&1", $output, $rc);
+	unlink($tmp);
+	if ($rc === 0) {
+	    echo "VALID";
+	    exit(0);
+	} else {
+	    echo "INVALID:" . implode("\n", $output);
+	    exit(1);
+	}
+	' 2>/dev/null)
 
-    # Quick manual merge test: base + profile as config.yaml
-    cat "$BASE_YAML" > "/tmp/config.yaml.migrate"
-    echo "" >> "/tmp/config.yaml.migrate"
-    cat "$PROFILES_DIR/$LEGACY_PROFILE.yaml" >> "/tmp/config.yaml.migrate"
+	if [ $? -eq 0 ] && [ "$VALIDATION_RESULT" = "VALID" ]; then
+		log_ok "配置校验通过"
+		VALIDATION_OK=1
+			# 写入合成后的 config.yaml
+			php -r '
+			require_once "/usr/local/www/includes/mihomo_lib.inc.php";
+			$base = file_exists(MIHOMO_BASE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_BASE_YAML)) : [];
+			$override = file_exists(MIHOMO_OVERRIDE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_OVERRIDE_YAML)) : [];
+			$pf = MIHOMO_PROFILES_DIR . "/'"$LEGACY_PROFILE"'.yaml";
+			$profile = file_exists($pf) ? mihomoYamlParse(file_get_contents($pf)) : [];
+			$merged = mergeAll($base, $override, $profile);
+			file_put_contents(MIHOMO_CONFIG_YAML, mihomoYamlDump($merged), LOCK_EX);
+			' 2>/dev/null
+			log_ok "合成 config.yaml 已写入"
+	else
+		log_warn "PHP 校验失败: $VALIDATION_RESULT"
+		log_info "回退到直接校验..."
+	fi
+fi
 
-    if /usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" >/dev/null 2>&1; then
-        log_ok "配置校验通过"
-        # Write merged config
-        cp "/tmp/config.yaml.migrate" "$MIHOMO_DIR/config.yaml"
-        rm -f "/tmp/config.yaml.migrate"
-    else
-        log_error "配置校验失败！保留旧文件不动。"
-        /usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" 2>&1 | while read -r line; do
-            log_error "  $line"
-        done
-        rm -f "/tmp/config.yaml.migrate"
-        echo "Migration validation failed at $(date)" > "$MIGRATE_ERROR"
-        echo "Validation output:" >> "$MIGRATE_ERROR"
-        /usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" 2>>"$MIGRATE_ERROR" || true
-        exit 1
-    fi
-else
-    # PHP validation succeeded, write merged config.yaml
-    php -r '
-    require_once "/usr/local/www/includes/mihomo_lib.inc.php";
-    $base = file_exists(MIHOMO_BASE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_BASE_YAML)) : [];
-    $override = file_exists(MIHOMO_OVERRIDE_YAML) ? mihomoYamlParse(file_get_contents(MIHOMO_OVERRIDE_YAML)) : [];
-    $pf = MIHOMO_PROFILES_DIR . "/'"$LEGACY_PROFILE"'.yaml";
-    $profile = file_exists($pf) ? mihomoYamlParse(file_get_contents($pf)) : [];
-    $merged = mergeAll($base, $override, $profile);
-    file_put_contents(MIHOMO_CONFIG_YAML, mihomoYamlDump($merged), LOCK_EX);
-    '
-    log_ok "合成 config.yaml 已写入"
+if [ "$VALIDATION_OK" -eq 0 ]; then
+	# 检查 mihomo 二进制是否有效
+	if ! /usr/local/bin/mihomo -v >/dev/null 2>&1; then
+		log_error "mihomo 二进制无效或未安装。请先安装 mihomo 内核后再执行迁移。"
+		log_error "  (bin/mihomo 是占位文件，需要从 GitHub 下载真实二进制)"
+		echo "mihomo binary not valid at $(date)" > "$MIGRATE_ERROR"
+		exit 1
+	fi
+
+	# 简单合并: base + profile
+	cat "$BASE_YAML" > "/tmp/config.yaml.migrate"
+	echo "" >> "/tmp/config.yaml.migrate"
+	cat "$PROFILES_DIR/$LEGACY_PROFILE.yaml" >> "/tmp/config.yaml.migrate"
+
+	if /usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" >/dev/null 2>&1; then
+		log_ok "配置校验通过"
+		# Write merged config
+		cp "/tmp/config.yaml.migrate" "$MIHOMO_DIR/config.yaml"
+		rm -f "/tmp/config.yaml.migrate"
+	else
+		log_error "配置校验失败！保留旧文件不动。"
+		/usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" 2>&1 | while read -r line; do
+			log_error "  $line"
+		done
+		rm -f "/tmp/config.yaml.migrate"
+		echo "Migration validation failed at $(date)" > "$MIGRATE_ERROR"
+		/usr/local/bin/mihomo -d "$MIHOMO_DIR" -t -f "/tmp/config.yaml.migrate" 2>>"$MIGRATE_ERROR" || true
+		exit 1
+	fi
 fi
 
 # ── 10. 写入迁移标志 ──
