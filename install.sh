@@ -291,83 +291,162 @@ log_step "添加防火墙规则..."
 if grep -q "5a73c3dc-69b1-4e15-89cb-b542aa2c1154" "$CONFIG_FILE"; then
   log_warn "存在同名规则，忽略"
 else
-  awk -v target="$TARGET_IF_BLOCK" '
-  BEGIN { inserted = 0 }
-  {
-    if ($0 ~ /<rules>/ && inserted == 0) {
-      print
-      print "          <rule uuid=\"5a73c3dc-69b1-4e15-89cb-b542aa2c1154\">"
-      print "            <enabled>1</enabled>"
-      print "            <statetype>keep</statetype>"
-      print "            <state-policy/>"
-      print "            <sequence>200</sequence>"
-      print "            <action>pass</action>"
-      print "            <quick>1</quick>"
-      print "            <interfacenot>0</interfacenot>"
-      print "            <interface>" target "</interface>"
-      print "            <direction>in</direction>"
-      print "            <ipprotocol>inet</ipprotocol>"
-      print "            <protocol>any</protocol>"
-      print "            <icmptype/>"
-      print "            <icmp6type/>"
-      print "            <source_net>" target "</source_net>"
-      print "            <source_not>0</source_not>"
-      print "            <source_port/>"
-      print "            <destination_net>" target "</destination_net>"
-      print "            <destination_not>0</destination_not>"
-      print "            <destination_port/>"
-      print "            <divert-to/>"
-      print "            <gateway/>"
-      print "            <replyto/>"
-      print "            <disablereplyto>0</disablereplyto>"
-      print "            <log>0</log>"
-      print "            <allowopts>0</allowopts>"
-      print "            <nosync>0</nosync>"
-      print "            <nopfsync>0</nopfsync>"
-      print "            <statetimeout/>"
-      print "            <udp-first/>"
-      print "            <udp-multiple/>"
-      print "            <udp-single/>"
-      print "            <max-src-nodes/>"
-      print "            <max-src-states/>"
-      print "            <max-src-conn/>"
-      print "            <max/>"
-      print "            <max-src-conn-rate/>"
-      print "            <max-src-conn-rates/>"
-      print "            <overload/>"
-      print "            <adaptivestart/>"
-      print "            <adaptiveend/>"
-      print "            <prio/>"
-      print "            <set-prio/>"
-      print "            <set-prio-low/>"
-      print "            <tag/>"
-      print "            <tagged/>"
-      print "            <tcpflags1/>"
-      print "            <tcpflags2/>"
-      print "            <tcpflags_any>0</tcpflags_any>"
-      print "            <categories/>"
-      print "            <sched/>"
-      print "            <tos/>"
-      print "            <shaper1/>"
-      print "            <shaper2/>"
-      print "            <description/>"
-      print "          </rule>"
-      inserted = 1
-      next
+  # 预探测 <OPNsense> → <Firewall> → <Filter> → <rules> 路径上每一层是否存在
+  # 仅在严格的父子上下文里计数，避免误匹配同名标签（例如 IPsec/Swanctl 也可能有 <rules>）
+  DETECT=$(awk '
+    /<OPNsense>/        { in_opn = 1; next }
+    /<\/OPNsense>/      { in_opn = 0; next }
+    in_opn && /<OPNsense\/>/                                     { has_opn_self = 1; next }
+    in_opn && /<Firewall>/    { saw_fw = 1; in_fw = 1; next }
+    in_opn && /<Firewall\/>/                                     { has_fw_self = 1; next }
+    in_opn && /<\/Firewall>/  { in_fw = 0; next }
+    in_fw  && /<Filter>/      { saw_ft = 1; in_ft = 1; next }
+    in_fw  && /<Filter\/>/                                       { has_ft_self = 1; next }
+    in_fw  && /<\/Filter>/    { in_ft = 0; next }
+    in_ft  && /<rules>/       { saw_rules = 1; next }
+    in_ft  && /<rules\/>/                                        { has_rules_self = 1; next }
+    END {
+      printf "%d %d %d %d %d %d",
+        (saw_fw?1:0), (saw_ft?1:0), (saw_rules?1:0),
+        (has_fw_self?1:0), (has_ft_self?1:0), (has_rules_self?1:0)
     }
-    print
-  }
-  END {
-    if (inserted == 0) exit 1
-  }
-  ' "$CONFIG_FILE" > "$TMP_FILE"
+  ' "$CONFIG_FILE")
+  read SAW_FW SAW_FT SAW_RULES HAS_FW_SELF HAS_FT_SELF HAS_RULES_SELF <<< "$DETECT"
 
-  if [ $? -eq 0 ] && [ -s "$TMP_FILE" ]; then
-    mv "$TMP_FILE" "$CONFIG_FILE"
-    log_success "${TARGET_IF_BLOCK} 防火墙规则添加完成"
+  if [ "$HAS_FW_SELF" = "1" ] || [ "$HAS_FT_SELF" = "1" ] || [ "$HAS_RULES_SELF" = "1" ]; then
+    log_error "检测到自闭合的 <Firewall/> / <Filter/> / <rules/>，需要手动展开后再运行，已跳过自动插入"
   else
-    rm -f "$TMP_FILE"
-    log_error "防火墙规则添加失败，请检查配置文件"
+    awk -v target="$TARGET_IF_BLOCK" \
+        -v saw_fw="$SAW_FW" -v saw_ft="$SAW_FT" -v saw_rules="$SAW_RULES" '
+    function emit_rule(indent,    p) {
+      p = indent
+      print p "<rule uuid=\"5a73c3dc-69b1-4e15-89cb-b542aa2c1154\">"
+      print p "  <enabled>1</enabled>"
+      print p "  <statetype>keep</statetype>"
+      print p "  <state-policy/>"
+      print p "  <sequence>200</sequence>"
+      print p "  <action>pass</action>"
+      print p "  <quick>1</quick>"
+      print p "  <interfacenot>0</interfacenot>"
+      print p "  <interface>" target "</interface>"
+      print p "  <direction>in</direction>"
+      print p "  <ipprotocol>inet</ipprotocol>"
+      print p "  <protocol>any</protocol>"
+      print p "  <icmptype/>"
+      print p "  <icmp6type/>"
+      print p "  <source_net>" target "</source_net>"
+      print p "  <source_not>0</source_not>"
+      print p "  <source_port/>"
+      print p "  <destination_net>" target "</destination_net>"
+      print p "  <destination_not>0</destination_not>"
+      print p "  <destination_port/>"
+      print p "  <divert-to/>"
+      print p "  <gateway/>"
+      print p "  <replyto/>"
+      print p "  <disablereplyto>0</disablereplyto>"
+      print p "  <log>0</log>"
+      print p "  <allowopts>0</allowopts>"
+      print p "  <nosync>0</nosync>"
+      print p "  <nopfsync>0</nopfsync>"
+      print p "  <statetimeout/>"
+      print p "  <udp-first/>"
+      print p "  <udp-multiple/>"
+      print p "  <udp-single/>"
+      print p "  <max-src-nodes/>"
+      print p "  <max-src-states/>"
+      print p "  <max-src-conn/>"
+      print p "  <max/>"
+      print p "  <max-src-conn-rate/>"
+      print p "  <max-src-conn-rates/>"
+      print p "  <overload/>"
+      print p "  <adaptivestart/>"
+      print p "  <adaptiveend/>"
+      print p "  <prio/>"
+      print p "  <set-prio/>"
+      print p "  <set-prio-low/>"
+      print p "  <tag/>"
+      print p "  <tagged/>"
+      print p "  <tcpflags1/>"
+      print p "  <tcpflags2/>"
+      print p "  <tcpflags_any>0</tcpflags_any>"
+      print p "  <categories/>"
+      print p "  <sched/>"
+      print p "  <tos/>"
+      print p "  <shaper1/>"
+      print p "  <shaper2/>"
+      print p "  <description/>"
+      print p "</rule>"
+    }
+    BEGIN { inserted = 0 }
+    {
+      # 进入 <OPNsense>
+      if ($0 ~ /<OPNsense>/) { in_opn = 1 }
+
+      # 离开 <OPNsense>：若整条 Firewall 链都不存在，补全后再插入
+      if ($0 ~ /<\/OPNsense>/) {
+        if (!inserted && saw_fw == 0) {
+          print "    <Firewall>"
+          print "      <Filter>"
+          print "        <rules>"
+          emit_rule("          ")
+          print "        </rules>"
+          print "      </Filter>"
+          print "    </Firewall>"
+          inserted = 1
+        }
+        in_opn = 0
+      }
+
+      # 进入 <Firewall>
+      if (in_opn && $0 ~ /<Firewall>/) { in_fw = 1 }
+
+      # 离开 <Firewall>：若没有 <Filter>，补 Filter+rules 后插入
+      if (in_opn && $0 ~ /<\/Firewall>/) {
+        if (!inserted && saw_fw == 1 && saw_ft == 0) {
+          print "      <Filter>"
+          print "        <rules>"
+          emit_rule("          ")
+          print "        </rules>"
+          print "      </Filter>"
+          inserted = 1
+        }
+        in_fw = 0
+      }
+
+      # 进入 <Filter>
+      if (in_fw && $0 ~ /<Filter>/) { in_ft = 1 }
+
+      # 离开 <Filter>：若没有 <rules>，补 rules 后插入
+      if (in_fw && $0 ~ /<\/Filter>/) {
+        if (!inserted && saw_ft == 1 && saw_rules == 0) {
+          print "        <rules>"
+          emit_rule("          ")
+          print "        </rules>"
+          inserted = 1
+        }
+        in_ft = 0
+      }
+
+      print
+
+      # 在已有 <rules> 之后插入新规则
+      if (in_ft && $0 ~ /<rules>/ && !inserted && saw_rules == 1) {
+        emit_rule("          ")
+        inserted = 1
+      }
+    }
+    END {
+      if (inserted == 0) exit 1
+    }
+    ' "$CONFIG_FILE" > "$TMP_FILE"
+
+    if [ $? -eq 0 ] && [ -s "$TMP_FILE" ]; then
+      mv "$TMP_FILE" "$CONFIG_FILE"
+      log_success "${TARGET_IF_BLOCK} 防火墙规则添加完成"
+    else
+      rm -f "$TMP_FILE"
+      log_error "防火墙规则添加失败，未能在 <OPNsense> 节点内定位到插入点"
+    fi
   fi
 fi
 echo ""
