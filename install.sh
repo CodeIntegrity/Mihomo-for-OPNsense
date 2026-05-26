@@ -102,7 +102,7 @@ run_or_die chmod +x ./bin/* ./rc.d/*
 chmod +x ./migrate.sh 2>/dev/null || true
 chmod +x ./conf/sub/*.sh 2>/dev/null || true
 run_or_die cp -f bin/* "$BIN_DIR/"
-run_or_die cp -f www/* "$WWW_DIR/"
+run_or_die cp -f www/*.php "$WWW_DIR/"
 run_or_die cp -f rc.d/* "$RC_DIR/"
 run_or_die cp -f rc.conf/* "$RC_CONF/"
 run_or_die cp -f plugins/* "$PLUGINS/"

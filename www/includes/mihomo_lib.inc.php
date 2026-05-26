@@ -527,21 +527,16 @@ function mergeAll($base, $override, $profile) {
           $overrideRest['append-proxy-groups']);
 
     // Build proxies: profile proxies + override append-proxies
-    $result['proxies'] = array_merge(
-        $profile['proxies'] ?? [],
-        $appendProxies
-    );
+    $profileProxies = (isset($profile['proxies']) && is_array($profile['proxies'])) ? $profile['proxies'] : [];
+    $result['proxies'] = array_merge($profileProxies, $appendProxies);
 
     // Build rules: prepend + profile rules + append
-    $result['rules'] = array_merge(
-        $prependRules,
-        $profile['rules'] ?? [],
-        $appendRules
-    );
+    $profileRules = (isset($profile['rules']) && is_array($profile['rules'])) ? $profile['rules'] : [];
+    $result['rules'] = array_merge($prependRules, $profileRules, $appendRules);
 
     // Build proxy-groups: prepend + profile proxy-groups + append
     // Handle name conflicts: override proxies list APPENDS to profile's
-    $profileGroups = $profile['proxy-groups'] ?? [];
+    $profileGroups = (isset($profile['proxy-groups']) && is_array($profile['proxy-groups'])) ? $profile['proxy-groups'] : [];
     $mergedGroups = [];
 
     // First add prepend groups
