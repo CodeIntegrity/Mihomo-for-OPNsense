@@ -121,7 +121,7 @@ dns:
   enable: true
   listen: 0.0.0.0:53
   default-nameserver: 
-    - 127.0.0.1:5335 # 指向mosdns
+    - 127.0.0.1:5355 # 指向Unbound
 EOF
 fi
 

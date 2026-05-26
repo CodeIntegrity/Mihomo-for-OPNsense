@@ -1,12 +1,10 @@
 ## Mihomo for OPNsense
 
-在 OPNsense 上运行 Mihomo、Mosdns，实现透明代理。支持订阅、DNS 分流。可以进行配置修改、程序控制、日志查看。在 OPNsense 26.1.6 上测试通过。
+在 OPNsense 上运行 Mihomo，实现透明代理。支持订阅。可以进行配置修改、程序控制、日志查看。在 OPNsense 26.1.6 上测试通过。
 
 ![](images/proxy.png)
 
 ## 集成程序
-
-[MosDNS](https://github.com/IrineSistiana/mosdns)
 
 [Vincent-Loeng大佬魔改Mihomo](https://github.com/Vincent-Loeng/mihomo)
 
@@ -33,7 +31,7 @@ sh uninstall.sh
 ## 配置过程
 
 1. 安装完成，检查 接口>分配，tun_3000 虚拟网卡是否添加为接口并启用（无需输入 IPv4 地址和网关）。
-2. 为避免端口冲突，检查 Unbound DNS 端口是否修改为 5355 端口（可以作为 mosdns 的默认上游 DNS）。
+2. 为避免端口冲突，检查 Unbound DNS 端口是否修改为 5355 端口。
 3. 检查 防火墙>规则(新)，tun 接口是否有 any to any 防火墙规则，以允许 tun 子网访问。
 4. 导航到 VPN>代理 菜单，修改 mihomo 配置并保存。
 5. 启动服务，客户端访问 ip111.cn，检查分流是否正常。
@@ -42,4 +40,4 @@ sh uninstall.sh
 
 1. 经测试 OPNsense的mihomo 配置文件stack 参数只能使用 gvisor栈。
 2. 默认配置文件开启了 api 功能，访问 http://lan_ip:9090/ui 登录仪表盘。
-3. 转到系统>设置>任务，添加”Renew mihomo Subsribe”和“mosdns rule_list updates”任务，自动更新订阅和规则列表。
+3. 转到系统>设置>任务，添加”Renew mihomo Subsribe”任务，自动更新订阅。

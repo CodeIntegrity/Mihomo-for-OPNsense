@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Mihomo for OPNsense — 在 OPNsense 防火墙上集成 Mihomo（透明代理）和 MosDNS（DNS 分流），通过 OPNsense Web UI 管理配置、服务控制和日志查看。仅在 x86_64 + OPNsense 26.1.6 测试通过。
+Mihomo for OPNsense — 在 OPNsense 防火墙上集成 Mihomo（透明代理），通过 OPNsense Web UI 管理配置、服务控制和日志查看。仅在 x86_64 + OPNsense 26.1.6 测试通过。
 
 ## 技术栈
 
@@ -17,17 +17,16 @@ Mihomo for OPNsense — 在 OPNsense 防火墙上集成 Mihomo（透明代理）
 ### 部署流程 (install.sh)
 
 `install.sh` 是核心部署脚本，将仓库文件部署到 OPNsense 系统路径，并修改 `/conf/config.xml`：
-1. 复制 `bin/` → `/usr/local/bin/`（mihomo / mosdns 二进制 + 工具）
+1. 复制 `bin/` → `/usr/local/bin/`（mihomo 二进制 + 工具）
 2. 复制 `www/` → `/usr/local/www/`（PHP Web 页面）
 3. 复制 `rc.d/` → `/usr/local/etc/rc.d/`（服务脚本）
 4. 复制 `actions/` → `/usr/local/opnsense/service/conf/actions.d/`（configd action 配置）
 5. 复制 `plugins/` → `/usr/local/etc/inc/plugins.inc.d/`（插件注册：服务列表 + syslog）
 6. 复制 `menu/` → `/usr/local/opnsense/mvc/app/models/OPNsense/`（菜单 XML）
 7. 复制 `conf/` → `/usr/local/etc/mihomo/`（mihomo 默认配置 + Country.mmdb）
-8. 复制 `mosdns/` → `/usr/local/etc/mosdns/`（mosdns 配置 + 域名/IP 规则集 + 更新脚本）
-9. 创建 `/usr/bin/sub` → 订阅更新入口脚本
-10. 用 awk 修改 `/conf/config.xml`：添加 tun_3000 接口、防火墙规则、将 Unbound DNS 端口改为 5355
-11. 重启 configd、Unbound、防火墙
+8. 创建 `/usr/bin/sub` → 订阅更新入口脚本
+9. 用 awk 修改 `/conf/config.xml`：添加 tun_3000 接口、防火墙规则、将 Unbound DNS 端口改为 5355
+10. 重启 configd、Unbound、防火墙
 
 ### 服务控制三层架构
 
@@ -39,21 +38,17 @@ OPNsense Web UI (PHP)
         → /usr/local/bin/<binary>                     (实际程序)
 ```
 
-- **PHP 层**：`www/services_mihomo.php`、`www/services_mosdns.php` — 通过 `exec("/usr/local/sbin/configctl mihomo ...")` 调用 configd
-- **configd action 层**：`actions/actions_mihomo.conf`、`actions/actions_mosdns.conf` — 定义 start/stop/restart/status 等动作与 rc.d 脚本的映射；还注册了 cron 任务（订阅更新 / mosdns 规则更新）
-- **rc.d 层**：`rc.d/mihomo`、`rc.d/mosdns` — FreeBSD 服务管理，使用 `/usr/sbin/daemon` 守护进程化
-- **插件层**：`plugins/mihomo.inc`、`plugins/mosdns.inc` — 向 OPNsense 注册服务（仪表盘显示 + syslog 设施 + WAN IP 变更时自动重启 mihomo）
+- **PHP 层**：`www/services_mihomo.php` — 通过 `exec("/usr/local/sbin/configctl mihomo ...")` 调用 configd
+- **configd action 层**：`actions/actions_mihomo.conf` — 定义 start/stop/restart/status 等动作与 rc.d 脚本的映射；还注册了 cron 任务（订阅更新）
+- **rc.d 层**：`rc.d/mihomo` — FreeBSD 服务管理，使用 `/usr/sbin/daemon` 守护进程化
+- **插件层**：`plugins/mihomo.inc` — 向 OPNsense 注册服务（仪表盘显示 + syslog 设施 + WAN IP 变更时自动重启 mihomo）
 
 ### DNS 链路
 
 ```
 客户端 DNS 请求
   → Mihomo (tun, dns-hijack any:53)     # 劫持所有 DNS
-    → forward to 127.0.0.1:5335          # 转发到 mosdns
-      → MosDNS (udp_server :5335)        # DNS 分流
-        → cache → domain_set 匹配
-          → domestic: 国内 DNS（alidns/dnspub/360）
-          → remote:   国外 DNS（Cloudflare/Google/Quad9/OpenDNS via DoH/DoT）
+    → Mihomo 内置 DNS 解析               # 直连/代理分流
 ```
 
 ### 端口分配
@@ -61,8 +56,7 @@ OPNsense Web UI (PHP)
 | 端口 | 服务 |
 |------|------|
 | 53 | Mihomo DNS 劫持入口 |
-| 5335 | MosDNS 监听（Mihomo 上游） |
-| 5355 | Unbound DNS（OPNsense 默认 DNS 改到此端口，作为 mosdns 可选上游） |
+| 5355 | Unbound DNS（OPNsense 默认 DNS 改到此端口） |
 | 7890 | Mihomo HTTP 代理 |
 | 7891 | Mihomo SOCKS5 代理 |
 | 9090 | Mihomo API / Dashboard UI |
@@ -84,26 +78,18 @@ OPNsense Web UI (PHP)
 - 通过 `fetch()` + `setInterval` 轮询 `/status_*.php` 端点获取实时状态/日志
 - 引入 `foot.inc`
 
-管理页面：`services_mihomo.php`、`services_mosdns.php`、`sub.php`
-状态 API：`status_mihomo.php`、`status_mosdns.php`（JSON）、`status_mihomo_logs.php`、`status_mosdns_logs.php`、`status_sub_logs.php`（text/plain）
+管理页面：`services_mihomo.php`、`sub.php`
+状态 API：`status_mihomo.php`（JSON）、`status_mihomo_logs.php`、`status_sub_logs.php`（text/plain）
 
 ### 配置校验
 
 - Mihomo：保存前通过 `mihomo -t -f <tempfile>` 校验 YAML 语法
-- MosDNS：无独立校验，以文件原子写入（tmp + rename）保证完整性
-- 两者都在保存前创建 `.bak.Ymd_His` 备份
-
-### MosDNS 规则更新
-
-`mosdns/scripts/update.sh` → configd action `[update]` → cron "mosdns rule_list updates"：
-- 通过 HTTP 下载 `direct-list.txt`、`proxy-list.txt`、`gfw.txt`、`all_cn.txt`
-- 先直连下载，失败后回退到 SOCKS5 代理下载
-- 部署到 `/usr/local/etc/mosdns/domains/` 和 `/usr/local/etc/mosdns/ips/`
+- 保存前创建 `.bak.Ymd_His` 备份
 
 ## 修改指引
 
 - **新增菜单项**：修改 `menu/Magic/Menu/Menu.xml`，添加新的 `<PageName>` 节点
 - **新增服务**：需要配套 rc.d 脚本 + actions conf + plugin inc + rc.conf + PHP 页面
-- **修改默认配置**：改 `conf/config.yaml`（mihomo）或 `mosdns/config.yaml`（mosdns）
+- **修改默认配置**：改 `conf/config.yaml`（mihomo）
 - **修改部署逻辑**：改 `install.sh`，注意 awk 对 `/conf/config.xml` 的操作
 - **修改 UI**：改对应 `www/*.php`，遵循 OPNsense 框架约定

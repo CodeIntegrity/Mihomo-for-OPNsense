@@ -82,7 +82,7 @@ install_pkg_if_missing() {
 
 # 创建目录
 log_step "创建目录..."
-run_or_die mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mosdns"
+run_or_die mkdir -p "$CONF_DIR/mihomo"
 
 # 复制文件
 log_step "复制文件并部署组件..."
@@ -98,7 +98,6 @@ run_or_die cp -f plugins/* "$PLUGINS/"
 run_or_die cp -f actions/* "$ACTIONS/"
 run_or_die cp -R -f menu/* "$MENU_DIR/"
 run_or_die cp -R -f conf/* "$CONF_DIR/mihomo/"
-run_or_die cp -R -f mosdns/* "$CONF_DIR/mosdns/"
 log_success "文件复制完成"
 
 # 新建订阅程序
@@ -117,17 +116,11 @@ install_pkg_if_missing jq
 install_pkg_if_missing curl
 
 # 启动Tun接口
-log_step "启动 mihomo 与 mosdns..."
+log_step "启动 mihomo..."
 if service mihomo restart > /dev/null 2>&1; then
   log_success "mihomo 重启完成"
 else
   log_error "mihomo 重启失败"
-fi
-
-if service mosdns restart > /dev/null 2>&1; then
-  log_success "mosdns 重启完成"
-else
-  log_error "mosdns 重启失败"
 fi
 echo ""
 

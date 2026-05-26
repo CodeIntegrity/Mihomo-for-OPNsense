@@ -47,17 +47,11 @@ CONFIG_FILE="/conf/config.xml"
 TMP_FILE="/tmp/config.xml.tmp"
 BACKUP_FILE="/conf/config.xml.bak.mihomo_uninstall_$(date +%Y%m%d_%H%M%S)"
 
-log_step "停止 mihomo 和 mosdns 服务..."
+log_step "停止 mihomo 服务..."
 if service mihomo stop > /dev/null 2>&1; then
     log_success "mihomo 服务已停止"
 else
     log_warn "mihomo 服务停止失败或服务不存在，跳过"
-fi
-
-if service mosdns stop > /dev/null 2>&1; then
-    log_success "mosdns 服务已停止"
-else
-    log_warn "mosdns 服务停止失败或服务不存在，跳过"
 fi
 
 echo ""
@@ -66,26 +60,21 @@ echo ""
 log_step "删除代理程序和配置，请稍等..."
 # 删除配置
 rm -rf /usr/local/etc/mihomo
-rm -rf /usr/local/etc/mosdns
 
 # 删除rc.d
 rm -f /usr/local/etc/rc.d/mihomo
-rm -f /usr/local/etc/rc.d/mosdns
 
 # 删除rc.conf
 rm -f /etc/rc.conf.d/mihomo
-rm -f /etc/rc.conf.d/mosdns
 
 # 删除action
 rm -f /usr/local/opnsense/service/conf/actions.d/actions_mihomo.conf
-rm -f /usr/local/opnsense/service/conf/actions.d/actions_mosdns.conf
 
 # 删除菜单和缓存
 rm -rf /usr/local/opnsense/mvc/app/models/OPNsense/Magic
 
 # 删除inc
 rm -f /usr/local/etc/inc/plugins.inc.d/mihomo.inc
-rm -f /usr/local/etc/inc/plugins.inc.d/mosdns.inc
 
 # 删除php
 rm -f /usr/local/www/services_mihomo.php
