@@ -29,7 +29,7 @@ header('Content-Type: text/plain; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (!file_exists($logFile)) {
-    echo gettext('Log file not found.');
+    echo dgettext('mihomo', 'Log file not found.');
     exit;
 }
 

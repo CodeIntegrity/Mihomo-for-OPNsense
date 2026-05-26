@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($files)) {
-            $message = gettext('No configuration files to export.');
+            $message = dgettext('mihomo', 'No configuration files to export.');
             $message_type = 'warning';
         } else {
             $fileList = implode(' ', $files);
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             if ($rc !== 0) {
-                $message = gettext('Failed to create backup archive.');
+                $message = dgettext('mihomo', 'Failed to create backup archive.');
                 $message_type = 'danger';
             } else {
                 // Encrypt if requested
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Import
     if ($action === 'import') {
         if (!isset($_FILES['backup_file']) || $_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
-            $message = gettext('File upload failed.');
+            $message = dgettext('mihomo', 'File upload failed.');
             $message_type = 'danger';
         } else {
             $tmpPath = '/tmp/mihomo-import-' . bin2hex(random_bytes(8)) . '.tar.gz';
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     " -out " . escapeshellarg($tmpDec)
                 );
                 if ($rc !== 0) {
-                    $message = gettext('Decryption failed. Wrong password?');
+                    $message = dgettext('mihomo', 'Decryption failed. Wrong password?');
                     $message_type = 'danger';
                     @unlink($tmpPath);
                     goto import_end;
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($rc !== 0) {
-                $message = gettext('Import failed.');
+                $message = dgettext('mihomo', 'Import failed.');
                 $message_type = 'danger';
             } else {
                 // Validate and apply
@@ -196,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $path = MIHOMO_BACKUPS_DIR . '/' . basename($filename);
         if (file_exists($path)) {
             @unlink($path);
-            $message = gettext('Backup deleted.');
+            $message = dgettext('mihomo', 'Backup deleted.');
             $message_type = 'success';
         }
     }
@@ -232,7 +232,7 @@ $backups = listBackups();
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-download"></i>
-                            <span><?= gettext('Export Configuration') ?></span>
+                            <span><?= dgettext('mihomo', 'Export Configuration') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -240,19 +240,19 @@ $backups = listBackups();
                     <td>
                         <div class="alert alert-warning">
                             <i class="fa fa-exclamation-triangle"></i>
-                            <?= gettext('Contains sensitive data (API secret, subscription URLs, proxy credentials). Store securely.') ?>
+                            <?= dgettext('mihomo', 'Contains sensitive data (API secret, subscription URLs, proxy credentials). Store securely.') ?>
                         </div>
                         <form method="post">
                             <input type="hidden" name="action" value="export">
                             <div class="checkbox"><label>
                                 <input type="checkbox" name="encrypt" id="export-encrypt" onchange="document.getElementById('export-pass-group').style.display=this.checked?'block':'none';">
-                                <?= gettext('Encrypt with AES-256-CBC (password required)') ?>
+                                <?= dgettext('mihomo', 'Encrypt with AES-256-CBC (password required)') ?>
                             </label></div>
                             <div id="export-pass-group" style="display:none;margin-top:8px;">
-                                <input type="password" name="export_password" class="form-control" style="width:300px;" placeholder="<?= gettext('Enter encryption password'); ?>">
+                                <input type="password" name="export_password" class="form-control" style="width:300px;" placeholder="<?= dgettext('mihomo', 'Enter encryption password'); ?>">
                             </div>
                             <button type="submit" class="btn btn-primary" style="margin-top:10px;">
-                                <i class="fa fa-download"></i> <?= gettext('Download Backup') ?>
+                                <i class="fa fa-download"></i> <?= dgettext('mihomo', 'Download Backup') ?>
                             </button>
                         </form>
                     </td>
@@ -271,7 +271,7 @@ $backups = listBackups();
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-upload"></i>
-                            <span><?= gettext('Import Configuration') ?></span>
+                            <span><?= dgettext('mihomo', 'Import Configuration') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -281,23 +281,23 @@ $backups = listBackups();
                             <input type="hidden" name="action" value="import">
                             <div class="checkbox"><label>
                                 <input type="checkbox" name="import_encrypted" id="import-encrypted" onchange="document.getElementById('import-pass-group').style.display=this.checked?'block':'none';">
-                                <?= gettext('Backup file is encrypted (enter password)') ?>
+                                <?= dgettext('mihomo', 'Backup file is encrypted (enter password)') ?>
                             </label></div>
                             <div id="import-pass-group" style="display:none;margin-top:8px;">
-                                <input type="password" name="import_password" class="form-control" style="width:300px;" placeholder="<?= gettext('Enter decryption password'); ?>">
+                                <input type="password" name="import_password" class="form-control" style="width:300px;" placeholder="<?= dgettext('mihomo', 'Enter decryption password'); ?>">
                             </div>
                             <div class="form-group" style="margin-top:10px;">
-                                <label><?= gettext('Conflict policy') ?>:</label>
+                                <label><?= dgettext('mihomo', 'Conflict policy') ?>:</label>
                                 <select name="conflict_policy" class="form-control" style="width:300px;">
-                                    <option value="merge"><?= gettext('Merge (keep existing items not in backup)') ?></option>
-                                    <option value="overwrite"><?= gettext('Overwrite all') ?></option>
+                                    <option value="merge"><?= dgettext('mihomo', 'Merge (keep existing items not in backup)') ?></option>
+                                    <option value="overwrite"><?= dgettext('mihomo', 'Overwrite all') ?></option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <input type="file" name="backup_file" accept=".tar.gz" required>
                             </div>
                             <button type="submit" class="btn btn-warning">
-                                <i class="fa fa-upload"></i> <?= gettext('Import Backup') ?>
+                                <i class="fa fa-upload"></i> <?= dgettext('mihomo', 'Import Backup') ?>
                             </button>
                         </form>
                     </td>
@@ -316,7 +316,7 @@ $backups = listBackups();
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-archive"></i>
-                            <span><?= gettext('Recent Local Backups') ?></span>
+                            <span><?= dgettext('mihomo', 'Recent Local Backups') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -325,9 +325,9 @@ $backups = listBackups();
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th><?= gettext('Date') ?></th>
-                                    <th><?= gettext('Size') ?></th>
-                                    <th><?= gettext('Actions') ?></th>
+                                    <th><?= dgettext('mihomo', 'Date') ?></th>
+                                    <th><?= dgettext('mihomo', 'Size') ?></th>
+                                    <th><?= dgettext('mihomo', 'Actions') ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -337,27 +337,27 @@ $backups = listBackups();
                                     <td><?= number_format($b['size'] / 1024, 1); ?> KB</td>
                                     <td>
                                         <a href="data:application/octet-stream,<?= urlencode(''); ?>" class="btn btn-xs btn-default" onclick="downloadBackup('<?= htmlspecialchars($b['filename'], ENT_QUOTES); ?>'); return false;">
-                                            <i class="fa fa-download"></i> <?= gettext('Download') ?>
+                                            <i class="fa fa-download"></i> <?= dgettext('mihomo', 'Download') ?>
                                         </a>
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('<?= gettext('Restore this backup? Current config will be replaced.'); ?>');">
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('<?= dgettext('mihomo', 'Restore this backup? Current config will be replaced.'); ?>');">
                                             <input type="hidden" name="action" value="restore_backup">
                                             <input type="hidden" name="filename" value="<?= htmlspecialchars($b['filename'], ENT_QUOTES); ?>">
                                             <button type="submit" class="btn btn-xs btn-warning">
-                                                <i class="fa fa-undo"></i> <?= gettext('Restore') ?>
+                                                <i class="fa fa-undo"></i> <?= dgettext('mihomo', 'Restore') ?>
                                             </button>
                                         </form>
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('<?= gettext('Delete this backup?') ?>');">
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('<?= dgettext('mihomo', 'Delete this backup?') ?>');">
                                             <input type="hidden" name="action" value="delete_backup">
                                             <input type="hidden" name="filename" value="<?= htmlspecialchars($b['filename'], ENT_QUOTES); ?>">
                                             <button type="submit" class="btn btn-xs btn-danger">
-                                                <i class="fa fa-trash"></i> <?= gettext('Delete') ?>
+                                                <i class="fa fa-trash"></i> <?= dgettext('mihomo', 'Delete') ?>
                                             </button>
                                         </form>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php if (empty($backups)): ?>
-                                <tr><td colspan="3" style="text-align:center;color:#999;"><i><?= gettext('No local backups found.') ?></i></td></tr>
+                                <tr><td colspan="3" style="text-align:center;color:#999;"><i><?= dgettext('mihomo', 'No local backups found.') ?></i></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

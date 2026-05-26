@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         if (empty($sub['name']) || empty($sub['url'])) {
-            $message = gettext('Name and URL are required.');
+            $message = dgettext('mihomo', 'Name and URL are required.');
             $message_type = 'danger';
         } else {
             $subs = readSubs();
@@ -49,11 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             list($ok, $err) = writeSubs($subs);
             if ($ok) {
                 $message = $action === 'add_sub'
-                    ? gettext('Subscription added.')
-                    : gettext('Subscription updated.');
+                    ? dgettext('mihomo', 'Subscription added.')
+                    : dgettext('mihomo', 'Subscription updated.');
                 $message_type = 'success';
             } else {
-                $message = gettext('Failed to save:') . ' ' . $err;
+                $message = dgettext('mihomo', 'Failed to save:') . ' ' . $err;
                 $message_type = 'danger';
             }
         }
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $subs = array_filter($subs, fn($s) => ($s['id'] ?? '') !== $subId);
         $subs = array_values($subs);
         list($ok, $err) = writeSubs($subs);
-        $message = $ok ? gettext('Subscription deleted.') : gettext('Failed to delete:') . ' ' . $err;
+        $message = $ok ? dgettext('mihomo', 'Subscription deleted.') : dgettext('mihomo', 'Failed to delete:') . ' ' . $err;
         $message_type = $ok ? 'success' : 'danger';
     }
 
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($sub) {
             updateSubStatus($subId, 'updating');
             mihomoExecBackground('bash /usr/local/etc/mihomo/sub/sub.sh ' . escapeshellarg($subId));
-            $message = sprintf(gettext('Subscription "%s" refresh triggered.'), $sub['name'] ?? $subId);
+            $message = sprintf(dgettext('mihomo', 'Subscription "%s" refresh triggered.'), $sub['name'] ?? $subId);
             $message_type = 'success';
         }
     }
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (file_exists(MIHOMO_SUB_LOG)) {
             file_put_contents(MIHOMO_SUB_LOG, '', LOCK_EX);
         }
-        $message = gettext('Subscription log cleared.');
+        $message = dgettext('mihomo', 'Subscription log cleared.');
         $message_type = 'success';
     }
 }
@@ -130,7 +130,7 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-link"></i>
-                            <span><?= gettext('Subscriptions') ?></span>
+                            <span><?= dgettext('mihomo', 'Subscriptions') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -139,14 +139,14 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                         <table class="table table-striped table-hover" id="sub-table">
                             <thead>
                                 <tr>
-                                    <th><?= gettext('Enabled') ?></th>
-                                    <th><?= gettext('Name') ?></th>
-                                    <th><?= gettext('URL') ?></th>
-                                    <th><?= gettext('Filter') ?></th>
-                                    <th><?= gettext('Interval') ?></th>
-                                    <th><?= gettext('Last Update') ?></th>
-                                    <th><?= gettext('Status') ?></th>
-                                    <th><?= gettext('Actions') ?></th>
+                                    <th><?= dgettext('mihomo', 'Enabled') ?></th>
+                                    <th><?= dgettext('mihomo', 'Name') ?></th>
+                                    <th><?= dgettext('mihomo', 'URL') ?></th>
+                                    <th><?= dgettext('mihomo', 'Filter') ?></th>
+                                    <th><?= dgettext('mihomo', 'Interval') ?></th>
+                                    <th><?= dgettext('mihomo', 'Last Update') ?></th>
+                                    <th><?= dgettext('mihomo', 'Status') ?></th>
+                                    <th><?= dgettext('mihomo', 'Actions') ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -183,17 +183,17 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                                                 <input type="hidden" name="action" value="refresh_now">
                                                 <input type="hidden" name="sub_id" value="<?= $id; ?>">
                                                 <button type="submit" class="btn btn-xs btn-success">
-                                                    <i class="fa fa-sync"></i> <?= gettext('Refresh') ?>
+                                                    <i class="fa fa-sync"></i> <?= dgettext('mihomo', 'Refresh') ?>
                                                 </button>
                                             </form>
                                             <button type="button" class="btn btn-xs btn-default" onclick="editSub('<?= $id; ?>')">
-                                                <i class="fa fa-pencil"></i> <?= gettext('Edit') ?>
+                                                <i class="fa fa-pencil"></i> <?= dgettext('mihomo', 'Edit') ?>
                                             </button>
-                                            <form method="post" style="display:inline;" onsubmit="return confirm('<?= gettext('Delete this subscription?') ?>');">
+                                            <form method="post" style="display:inline;" onsubmit="return confirm('<?= dgettext('mihomo', 'Delete this subscription?') ?>');">
                                                 <input type="hidden" name="action" value="delete_sub">
                                                 <input type="hidden" name="sub_id" value="<?= $id; ?>">
                                                 <button type="submit" class="btn btn-xs btn-danger">
-                                                    <i class="fa fa-trash"></i> <?= gettext('Delete') ?>
+                                                    <i class="fa fa-trash"></i> <?= dgettext('mihomo', 'Delete') ?>
                                                 </button>
                                             </form>
                                         </div>
@@ -201,71 +201,71 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php if (empty($subs)): ?>
-                                <tr><td colspan="8" style="text-align:center;color:#999;"><i><?= gettext('No subscriptions. Click "Add Subscription" to add one.') ?></i></td></tr>
+                                <tr><td colspan="8" style="text-align:center;color:#999;"><i><?= dgettext('mihomo', 'No subscriptions. Click "Add Subscription" to add one.') ?></i></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
 
                         <button type="button" class="btn btn-primary" id="btn-add-sub">
-                            <i class="fa fa-plus"></i> <?= gettext('Add Subscription') ?>
+                            <i class="fa fa-plus"></i> <?= dgettext('mihomo', 'Add Subscription') ?>
                         </button>
 
                         <!-- Add/Edit Form -->
                         <div id="sub-form" class="mihomo-edit-form">
-                            <h4 id="sub-form-title"><?= gettext('Add Subscription') ?></h4>
+                            <h4 id="sub-form-title"><?= dgettext('mihomo', 'Add Subscription') ?></h4>
                             <form method="post">
                                 <input type="hidden" name="action" id="sub-form-action" value="add_sub">
                                 <input type="hidden" name="sub_id" id="sub-form-id" value="">
 
                                 <div class="row">
                                     <div class="col-sm-6"><div class="form-group">
-                                        <label><?= gettext('Name') ?> *</label>
+                                        <label><?= dgettext('mihomo', 'Name') ?> *</label>
                                         <input type="text" name="name" id="sub-form-name" class="form-control" required pattern="[a-zA-Z0-9_-]+" placeholder="my-subscription">
-                                        <small class="text-muted"><?= gettext('Only letters, numbers, hyphens and underscores.') ?></small>
+                                        <small class="text-muted"><?= dgettext('mihomo', 'Only letters, numbers, hyphens and underscores.') ?></small>
                                     </div></div>
                                     <div class="col-sm-6"><div class="form-group">
-                                        <label><?= gettext('URL') ?> *</label>
+                                        <label><?= dgettext('mihomo', 'URL') ?> *</label>
                                         <input type="url" name="url" id="sub-form-url" class="form-control" required placeholder="https://...">
                                     </div></div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-sm-4"><div class="form-group">
-                                        <label><?= gettext('Custom User-Agent') ?></label>
+                                        <label><?= dgettext('mihomo', 'Custom User-Agent') ?></label>
                                         <input type="text" name="user_agent" id="sub-form-ua" class="form-control" value="clash-verge/v1.7.0">
                                     </div></div>
                                     <div class="col-sm-4"><div class="form-group">
-                                        <label><?= gettext('Auto Update Interval') ?></label>
+                                        <label><?= dgettext('mihomo', 'Auto Update Interval') ?></label>
                                         <select name="update_interval_hours" id="sub-form-interval" class="form-control">
-                                            <option value="0"><?= gettext('Off') ?></option>
-                                            <option value="1">1 <?= gettext('hour') ?></option>
-                                            <option value="6" selected>6 <?= gettext('hours') ?></option>
-                                            <option value="12">12 <?= gettext('hours') ?></option>
-                                            <option value="24">24 <?= gettext('hours') ?></option>
+                                            <option value="0"><?= dgettext('mihomo', 'Off') ?></option>
+                                            <option value="1">1 <?= dgettext('mihomo', 'hour') ?></option>
+                                            <option value="6" selected>6 <?= dgettext('mihomo', 'hours') ?></option>
+                                            <option value="12">12 <?= dgettext('mihomo', 'hours') ?></option>
+                                            <option value="24">24 <?= dgettext('mihomo', 'hours') ?></option>
                                         </select>
                                     </div></div>
                                     <div class="col-sm-4"><div class="form-group">
                                         <label>
                                             <input type="checkbox" name="enabled" id="sub-form-enabled" checked>
-                                            <?= gettext('Enabled') ?>
+                                            <?= dgettext('mihomo', 'Enabled') ?>
                                         </label>
                                     </div></div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-sm-6"><div class="form-group">
-                                        <label><?= gettext('Include Keyword') ?> <small>(<?= gettext('comma separated') ?>)</small></label>
+                                        <label><?= dgettext('mihomo', 'Include Keyword') ?> <small>(<?= dgettext('mihomo', 'comma separated') ?>)</small></label>
                                         <input type="text" name="include_keyword" id="sub-form-include" class="form-control" placeholder="HK,SG,JP">
                                     </div></div>
                                     <div class="col-sm-6"><div class="form-group">
-                                        <label><?= gettext('Exclude Keyword') ?> <small>(<?= gettext('comma separated') ?>)</small></label>
+                                        <label><?= dgettext('mihomo', 'Exclude Keyword') ?> <small>(<?= dgettext('mihomo', 'comma separated') ?>)</small></label>
                                         <input type="text" name="exclude_keyword" id="sub-form-exclude" class="form-control" value="剩余,流量,过期,官网,套餐">
                                     </div></div>
                                 </div>
 
                                 <div class="mihomo-actions">
-                                    <button type="submit" class="btn btn-danger"><i class="fa fa-save"></i> <?= gettext('Save') ?></button>
-                                    <button type="button" class="btn btn-default" onclick="cancelEdit();"><?= gettext('Cancel') ?></button>
+                                    <button type="submit" class="btn btn-danger"><i class="fa fa-save"></i> <?= dgettext('mihomo', 'Save') ?></button>
+                                    <button type="button" class="btn btn-default" onclick="cancelEdit();"><?= dgettext('mihomo', 'Cancel') ?></button>
                                 </div>
                             </form>
                         </div>
@@ -285,7 +285,7 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-file-text-o"></i>
-                            <span><?= gettext('Subscription Log') ?></span>
+                            <span><?= dgettext('mihomo', 'Subscription Log') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -293,7 +293,7 @@ if (file_exists(MIHOMO_SUB_LOG)) {
                     <td>
                         <form method="post" class="mihomo-actions" style="margin-bottom:10px;">
                             <button type="submit" name="action" value="clear_log" class="btn btn-default">
-                                <i class="fa fa-trash"></i> <?= gettext('Clear Log') ?>
+                                <i class="fa fa-trash"></i> <?= dgettext('mihomo', 'Clear Log') ?>
                             </button>
                         </form>
                         <textarea id="sub-log-viewer" class="form-control" rows="16" readonly style="max-width:none;font-family:monospace;font-size:12px;"></textarea>
@@ -326,7 +326,7 @@ if (file_exists(MIHOMO_SUB_LOG)) {
         document.getElementById('sub-form-enabled').checked = sub.enabled !== false;
         document.getElementById('sub-form-include').value = sub.include_keyword || '';
         document.getElementById('sub-form-exclude').value = sub.exclude_keyword || '剩余,流量,过期,官网,套餐';
-        document.getElementById('sub-form-title').textContent = '<?= gettext('Edit Subscription') ?>';
+        document.getElementById('sub-form-title').textContent = '<?= dgettext('mihomo', 'Edit Subscription') ?>';
         document.getElementById('sub-form').classList.add('active');
     };
 
@@ -341,7 +341,7 @@ if (file_exists(MIHOMO_SUB_LOG)) {
         document.getElementById('sub-form-enabled').checked = true;
         document.getElementById('sub-form-include').value = '';
         document.getElementById('sub-form-exclude').value = '剩余,流量,过期,官网,套餐';
-        document.getElementById('sub-form-title').textContent = '<?= gettext('Add Subscription') ?>';
+        document.getElementById('sub-form-title').textContent = '<?= dgettext('mihomo', 'Add Subscription') ?>';
     };
 
     document.getElementById('btn-add-sub').addEventListener('click', function() {

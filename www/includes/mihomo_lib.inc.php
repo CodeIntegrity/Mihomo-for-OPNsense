@@ -30,6 +30,18 @@ define('MIHOMO_TRAFFIC_STATE', '/tmp/mihomo-traffic-state.json');
 define('MIHOMO_RELEASE_CACHE', '/tmp/mihomo-latest-release.json');
 
 // ============================================================
+// === I18N
+// ============================================================
+// 绑定独立的 mihomo 翻译域，不切换默认域，避免影响 OPNsense 框架翻译。
+// 页面用 dgettext('mihomo', '...') 显式调用。
+if (function_exists('bindtextdomain')) {
+    bindtextdomain('mihomo', '/usr/local/share/locale');
+    if (function_exists('bind_textdomain_codeset')) {
+        bind_textdomain_codeset('mihomo', 'UTF-8');
+    }
+}
+
+// ============================================================
 // === UTILITY
 // ============================================================
 
@@ -109,7 +121,7 @@ function atomicConfigUpdate($newContent) {
 
     // 1. Write tmp
     if (@file_put_contents($tmpFile, $newContent, LOCK_EX) === false) {
-        return [false, gettext('Failed to write temporary config file.')];
+        return [false, dgettext('mihomo', 'Failed to write temporary config file.')];
     }
 
     // 2. Validate with mihomo -t
@@ -120,7 +132,7 @@ function atomicConfigUpdate($newContent) {
 
     if ($rc !== 0) {
         @unlink($tmpFile);
-        return [false, gettext('Config validation failed:') . "\n" . $output];
+        return [false, dgettext('mihomo', 'Config validation failed:') . "\n" . $output];
     }
 
     // 3. Create backup of current config
@@ -132,16 +144,16 @@ function atomicConfigUpdate($newContent) {
     // 4. Atomic mv
     if (!@rename($tmpFile, $configFile)) {
         @unlink($tmpFile);
-        return [false, gettext('Failed to replace config file.')];
+        return [false, dgettext('mihomo', 'Failed to replace config file.')];
     }
 
     // 5. Reload mihomo
     list($ok, $msg) = reloadMihomo();
     if (!$ok) {
-        return [false, gettext('Config saved but reload failed:') . ' ' . $msg];
+        return [false, dgettext('mihomo', 'Config saved but reload failed:') . ' ' . $msg];
     }
 
-    return [true, gettext('Config saved and reloaded successfully.')];
+    return [true, dgettext('mihomo', 'Config saved and reloaded successfully.')];
 }
 
 // ============================================================
@@ -174,7 +186,7 @@ function reloadMihomo() {
             usleep(1500000); // 1.5s
             $status = getMihomoStatus();
             if ($status['status'] === 'running') {
-                return [true, gettext('Config hot-reloaded.')];
+                return [true, dgettext('mihomo', 'Config hot-reloaded.')];
             }
         }
     }
@@ -191,11 +203,11 @@ function restartMihomo() {
         usleep(500000);
         $status = getMihomoStatus();
         if ($status['status'] === 'running') {
-            return [true, gettext('Service restarted and running.')];
+            return [true, dgettext('mihomo', 'Service restarted and running.')];
         }
     }
 
-    return [false, gettext('Service restart failed or not running after 10s.')];
+    return [false, dgettext('mihomo', 'Service restart failed or not running after 10s.')];
 }
 
 /**
@@ -634,7 +646,7 @@ function readActiveProfile() {
 function activateProfile($name) {
     $profiles = readProfiles();
     if (!isset($profiles[$name])) {
-        return [false, sprintf(gettext('Profile "%s" not found.'), $name)];
+        return [false, sprintf(dgettext('mihomo', 'Profile "%s" not found.'), $name)];
     }
 
     // Read source files
@@ -655,7 +667,7 @@ function activateProfile($name) {
     try {
         lockedWrite(MIHOMO_ACTIVE_JSON, json_encode(['profile' => $name], JSON_PRETTY_PRINT));
     } catch (RuntimeException $e) {
-        return [false, gettext('Failed to write active profile:') . ' ' . $e->getMessage()];
+        return [false, dgettext('mihomo', 'Failed to write active profile:') . ' ' . $e->getMessage()];
     }
 
     // Atomic config update
@@ -766,7 +778,7 @@ function listBackups() {
 function restoreBackup($filename) {
     $filepath = MIHOMO_BACKUPS_DIR . '/' . basename($filename);
     if (!file_exists($filepath)) {
-        return [false, gettext('Backup file not found.')];
+        return [false, dgettext('mihomo', 'Backup file not found.')];
     }
 
     // Create fallback backup before restore
@@ -778,7 +790,7 @@ function restoreBackup($filename) {
     );
 
     if ($rc !== 0) {
-        return [false, gettext('Failed to extract backup.')];
+        return [false, dgettext('mihomo', 'Failed to extract backup.')];
     }
 
     // Validate merged result

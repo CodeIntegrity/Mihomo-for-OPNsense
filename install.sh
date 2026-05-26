@@ -161,6 +161,8 @@ if [ -z "$(ls -A "$CONF_DIR/mihomo/profiles" 2>/dev/null)" ] && [ -d ./conf/prof
 	cp -R ./conf/profiles/. "$CONF_DIR/mihomo/profiles/"
 	log_info "  初始化默认 profile"
 fi
+# 写入 v2 标志：全新安装路径直接预置 v2 布局，等同于已完成迁移
+touch "$CONF_DIR/mihomo/.migrated-v2"
 log_success "v2 配置就绪"
 
 # 统一设置文件权限

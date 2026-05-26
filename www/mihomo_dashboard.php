@@ -31,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $subId = $currentProfileMeta['sub_id'] ?? null;
         if ($subId) {
             mihomoExecBackground('bash /usr/local/etc/mihomo/sub/sub.sh ' . escapeshellarg($subId));
-            $message = gettext('Subscription refresh triggered. Please wait...');
+            $message = dgettext('mihomo', 'Subscription refresh triggered. Please wait...');
             $message_type = 'success';
         } else {
-            $message = gettext('Active profile is not linked to a subscription.');
+            $message = dgettext('mihomo', 'Active profile is not linked to a subscription.');
             $message_type = 'warning';
         }
     } elseif ($action === 'health_check') {
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'bash /usr/local/etc/mihomo/sub/mihomo_health_check.sh ' .
             escapeshellarg($uuid) . ' ' . $pfName . ' ' . $mode
         );
-        $message = gettext('Health check started. Results will appear below.');
+        $message = dgettext('mihomo', 'Health check started. Results will appear below.');
         $message_type = 'info';
     }
 }
@@ -120,8 +120,8 @@ if ($controller) {
 
 <?php if (!isMigrated()): ?>
 <div class="alert alert-danger">
-    <strong><?= gettext('Migration required!') ?></strong>
-    <?= gettext('Please run migrate.sh or re-run install.sh to upgrade your configuration to v2 format.') ?>
+    <strong><?= dgettext('mihomo', 'Migration required!') ?></strong>
+    <?= dgettext('mihomo', 'Please run migrate.sh or re-run install.sh to upgrade your configuration to v2 format.') ?>
     <pre style="margin:8px 0 0;white-space:pre-wrap;"><?= htmlspecialchars(getMigrationError() ?: '', ENT_QUOTES); ?></pre>
 </div>
 <?php endif; ?>
@@ -139,7 +139,7 @@ if ($controller) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-heartbeat"></i>
-                            <span><?= gettext('Service Status') ?></span>
+                            <span><?= dgettext('mihomo', 'Service Status') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -153,23 +153,23 @@ if ($controller) {
                         <div class="mihomo-action-bar" style="margin-top:10px;">
                             <form method="post" style="display:inline;">
                                 <button type="submit" name="action" value="start" class="btn btn-success" id="btn-start">
-                                    <i class="fa fa-play"></i> <?= gettext('Start') ?>
+                                    <i class="fa fa-play"></i> <?= dgettext('mihomo', 'Start') ?>
                                 </button>
                                 <button type="submit" name="action" value="stop" class="btn btn-danger" id="btn-stop">
-                                    <i class="fa fa-stop"></i> <?= gettext('Stop') ?>
+                                    <i class="fa fa-stop"></i> <?= dgettext('mihomo', 'Stop') ?>
                                 </button>
                                 <button type="submit" name="action" value="restart" class="btn btn-warning" id="btn-restart">
-                                    <i class="fa fa-refresh"></i> <?= gettext('Restart') ?>
+                                    <i class="fa fa-refresh"></i> <?= dgettext('mihomo', 'Restart') ?>
                                 </button>
                             </form>
                             <?php if ($dashboardUrl): ?>
                             <a href="<?= htmlspecialchars($dashboardUrl, ENT_QUOTES); ?>" target="_blank" class="btn btn-default">
-                                <i class="fa fa-external-link"></i> <?= gettext('Open Dashboard UI') ?>
+                                <i class="fa fa-external-link"></i> <?= dgettext('mihomo', 'Open Dashboard UI') ?>
                             </a>
                             <?php else: ?>
                             <span class="mihomo-localhost-hint">
                                 <i class="fa fa-info-circle"></i>
-                                <?= gettext('Dashboard listens on localhost. Access via LAN or allow firewall port.') ?>
+                                <?= dgettext('mihomo', 'Dashboard listens on localhost. Access via LAN or allow firewall port.') ?>
                             </span>
                             <?php endif; ?>
                         </div>
@@ -189,7 +189,7 @@ if ($controller) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-tag"></i>
-                            <span><?= gettext('Active Profile') ?></span>
+                            <span><?= dgettext('mihomo', 'Active Profile') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -200,42 +200,42 @@ if ($controller) {
                             <strong><?= htmlspecialchars($profile, ENT_QUOTES); ?></strong>
                             <?php if ($currentProfileMeta): ?>
                             <span style="color:#888;margin-left:8px;">
-                                <?= (int)($currentProfileMeta['node_count'] ?? 0); ?> <?= gettext('nodes') ?>
+                                <?= (int)($currentProfileMeta['node_count'] ?? 0); ?> <?= dgettext('mihomo', 'nodes') ?>
                                 |
-                                <?= gettext('Updated') ?>: <?= htmlspecialchars($currentProfileMeta['last_update'] ?? 'N/A', ENT_QUOTES); ?>
+                                <?= dgettext('mihomo', 'Updated') ?>: <?= htmlspecialchars($currentProfileMeta['last_update'] ?? 'N/A', ENT_QUOTES); ?>
                             </span>
                             <?php endif; ?>
                             <?php else: ?>
-                            <span style="color:#999;"><?= gettext('No active profile') ?></span>
+                            <span style="color:#999;"><?= dgettext('mihomo', 'No active profile') ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="mihomo-action-bar" style="margin-top:10px;">
                             <form method="post" style="display:flex;gap:8px;align-items:center;">
                                 <select name="profile" class="form-control" style="width:auto;" id="profile-select">
-                                    <option value=""><?= gettext('Switch Profile') ?>...</option>
+                                    <option value=""><?= dgettext('mihomo', 'Switch Profile') ?>...</option>
                                     <?php foreach ($profiles as $p): ?>
                                     <option value="<?= htmlspecialchars($p['name'], ENT_QUOTES); ?>" <?= $profile === $p['name'] ? 'selected' : ''; ?>>
                                         <?= htmlspecialchars($p['name'], ENT_QUOTES); ?>
-                                        (<?= $p['source_type'] === 'subscription' ? gettext('sub') : gettext('manual'); ?>
-                                        | <?= (int)($p['node_count'] ?? 0); ?> <?= gettext('nodes') ?>)
+                                        (<?= $p['source_type'] === 'subscription' ? dgettext('mihomo', 'sub') : dgettext('mihomo', 'manual'); ?>
+                                        | <?= (int)($p['node_count'] ?? 0); ?> <?= dgettext('mihomo', 'nodes') ?>)
                                     </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <button type="submit" name="action" value="activate_profile" class="btn btn-primary" id="btn-switch">
-                                    <i class="fa fa-check"></i> <?= gettext('Activate') ?>
+                                    <i class="fa fa-check"></i> <?= dgettext('mihomo', 'Activate') ?>
                                 </button>
                             </form>
                             <?php if ($currentProfileMeta && $currentProfileMeta['source_type'] === 'subscription'): ?>
                             <form method="post" style="display:inline;">
                                 <button type="submit" name="action" value="refresh_subscription" class="btn btn-default" id="btn-refresh-sub">
-                                    <i class="fa fa-sync"></i> <?= gettext('Refresh Subscription') ?>
+                                    <i class="fa fa-sync"></i> <?= dgettext('mihomo', 'Refresh Subscription') ?>
                                 </button>
                             </form>
                             <?php endif; ?>
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="mode" value="quick">
                                 <button type="submit" name="action" value="health_check" class="btn btn-info" id="btn-health">
-                                    <i class="fa fa-heartbeat"></i> <?= gettext('Health Check') ?>
+                                    <i class="fa fa-heartbeat"></i> <?= dgettext('mihomo', 'Health Check') ?>
                                 </button>
                             </form>
                         </div>
@@ -256,8 +256,8 @@ if ($controller) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-tachometer"></i>
-                            <span><?= gettext('Realtime Metrics') ?></span>
-                            <span style="font-size:11px;color:#aaa;margin-left:auto;"><?= gettext('poll every 2s') ?></span>
+                            <span><?= dgettext('mihomo', 'Realtime Metrics') ?></span>
+                            <span style="font-size:11px;color:#aaa;margin-left:auto;"><?= dgettext('mihomo', 'poll every 2s') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -266,19 +266,19 @@ if ($controller) {
                         <div class="mihomo-metrics" id="metrics-grid">
                             <div class="mihomo-metric-card">
                                 <div class="mihomo-metric-value" id="metric-up">--</div>
-                                <div class="mihomo-metric-label"><?= gettext('Upload') ?></div>
+                                <div class="mihomo-metric-label"><?= dgettext('mihomo', 'Upload') ?></div>
                             </div>
                             <div class="mihomo-metric-card">
                                 <div class="mihomo-metric-value" id="metric-down">--</div>
-                                <div class="mihomo-metric-label"><?= gettext('Download') ?></div>
+                                <div class="mihomo-metric-label"><?= dgettext('mihomo', 'Download') ?></div>
                             </div>
                             <div class="mihomo-metric-card">
                                 <div class="mihomo-metric-value" id="metric-conns">--</div>
-                                <div class="mihomo-metric-label"><?= gettext('Connections') ?></div>
+                                <div class="mihomo-metric-label"><?= dgettext('mihomo', 'Connections') ?></div>
                             </div>
                             <div class="mihomo-metric-card">
                                 <div class="mihomo-metric-value" id="metric-mem">--</div>
-                                <div class="mihomo-metric-label"><?= gettext('Memory') ?></div>
+                                <div class="mihomo-metric-label"><?= dgettext('mihomo', 'Memory') ?></div>
                             </div>
                         </div>
                         <div id="metrics-error" style="display:none;color:#d9534f;margin-top:8px;"></div>
@@ -298,8 +298,8 @@ if ($controller) {
                     <td class="mihomo-panel-cell">
                         <div class="mihomo-section-title">
                             <i class="fa fa-file-text-o"></i>
-                            <span><?= gettext('Recent Log') ?></span>
-                            <span style="font-size:11px;color:#aaa;margin-left:auto;"><?= gettext('last 30 lines') ?></span>
+                            <span><?= dgettext('mihomo', 'Recent Log') ?></span>
+                            <span style="font-size:11px;color:#aaa;margin-left:auto;"><?= dgettext('mihomo', 'last 30 lines') ?></span>
                         </div>
                     </td>
                 </tr>
@@ -370,7 +370,7 @@ if ($controller) {
 
                 box.className = 'mihomo-status-box ' + (running ? 'is-running' : 'is-stopped');
                 light.className = 'mihomo-status-light ' + (running ? 'is-running' : 'is-stopped');
-                text.textContent = running ? '<?= gettext('mihomo is running') ?>' : '<?= gettext('mihomo is stopped') ?>';
+                text.textContent = running ? '<?= dgettext('mihomo', 'mihomo is running') ?>' : '<?= dgettext('mihomo', 'mihomo is stopped') ?>';
 
                 var parts = [];
                 if (data.uptime) parts.push('uptime ' + data.uptime);
@@ -385,7 +385,7 @@ if ($controller) {
             .catch(function() {
                 retryDelay = Math.min(retryDelay * 2, maxRetryDelay);
                 var text = document.getElementById('mihomo-status-text');
-                text.innerHTML = '<span class="mihomo-reconnect"><?= gettext('Reconnecting...') ?></span>';
+                text.innerHTML = '<span class="mihomo-reconnect"><?= dgettext('mihomo', 'Reconnecting...') ?></span>';
             });
     }
 
@@ -404,7 +404,7 @@ if ($controller) {
             .catch(function() {
                 var errEl = document.getElementById('metrics-error');
                 errEl.style.display = 'block';
-                errEl.textContent = '<?= gettext('API unavailable, check external-controller settings') ?>';
+                errEl.textContent = '<?= dgettext('mihomo', 'API unavailable, check external-controller settings') ?>';
             });
     }
 
@@ -433,20 +433,20 @@ if ($controller) {
                 el.style.display = 'block';
                 if (data.state === 'running') {
                     el.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' +
-                        '<?= gettext('Checking') ?>... ' + data.progress.done + '/' + data.progress.total;
+                        '<?= dgettext('mihomo', 'Checking') ?>... ' + data.progress.done + '/' + data.progress.total;
                 } else if (data.state === 'done') {
                     var r = data.result;
                     el.innerHTML =
-                        '<span class="alive"><i class="fa fa-check-circle"></i> <?= gettext('Alive') ?>: ' + r.alive + '</span>' +
+                        '<span class="alive"><i class="fa fa-check-circle"></i> <?= dgettext('mihomo', 'Alive') ?>: ' + r.alive + '</span>' +
                         ' &nbsp;|&nbsp; ' +
-                        '<span class="dead"><i class="fa fa-times-circle"></i> <?= gettext('Dead') ?>: ' + r.dead + '</span>';
+                        '<span class="dead"><i class="fa fa-times-circle"></i> <?= dgettext('mihomo', 'Dead') ?>: ' + r.dead + '</span>';
                     if (r.dead_list && r.dead_list.length > 0) {
                         el.innerHTML += '<br><small style="color:#999;">' + r.dead_list.join(', ') + '</small>';
                     }
                     healthUuid = null;
                     if (healthTimer) { clearInterval(healthTimer); healthTimer = null; }
                 } else {
-                    el.innerHTML = '<span class="dead"><?= gettext('Health check failed') ?></span>';
+                    el.innerHTML = '<span class="dead"><?= dgettext('mihomo', 'Health check failed') ?></span>';
                     healthUuid = null;
                     if (healthTimer) { clearInterval(healthTimer); healthTimer = null; }
                 }
