@@ -56,39 +56,97 @@ fi
 
 echo ""
 
-# 删除程序和配置
-log_step "删除代理程序和配置，请稍等..."
-# 删除配置
-rm -rf /usr/local/etc/mihomo
+# 询问是否保留用户数据
+log_step "用户数据清理选项..."
+echo -e "${YELLOW}是否保留用户配置数据？${RESET}"
+echo -e "  ${CYAN}y${RESET} — 保留 /usr/local/etc/mihomo/ 下的配置文件（base.yaml, override.yaml, profiles/ 等）"
+echo -e "  ${CYAN}N${RESET} — 全部删除（默认）"
+read -r -p "Do you want to keep user data? [y/N]: " KEEP_DATA
+KEEP_DATA=${KEEP_DATA:-n}
 
-# 删除rc.d
+echo ""
+
+# 删除程序和配置
+log_step "删除 Mihomo 组件..."
+
+if [ "$KEEP_DATA" = "y" ] || [ "$KEEP_DATA" = "Y" ]; then
+    log_warn "保留用户配置目录: /usr/local/etc/mihomo/"
+    # 仅删除非用户数据（sub 脚本、ui、二进制引用）
+    rm -f /usr/local/etc/mihomo/sub/sub.sh
+    rm -f /usr/local/etc/mihomo/sub/sub_cron.sh
+    rm -f /usr/local/etc/mihomo/sub/update_core.sh
+    rm -f /usr/local/etc/mihomo/sub/update_geoip.sh
+    rm -f /usr/local/etc/mihomo/sub/update_ui.sh
+    rm -f /usr/local/etc/mihomo/sub/mihomo_health_check.sh
+    rm -f /usr/local/etc/mihomo/sub/template_config.yaml
+    rm -f /usr/local/etc/mihomo/sub/env
+    rm -f /usr/local/etc/mihomo/.migrated-v2
+    log_success "组件脚本已删除，用户配置已保留"
+else
+    rm -rf /usr/local/etc/mihomo
+    log_success "用户配置目录已删除"
+fi
+
+# 删除 rc.d
 rm -f /usr/local/etc/rc.d/mihomo
 
-# 删除rc.conf
+# 删除 rc.conf
 rm -f /etc/rc.conf.d/mihomo
 
-# 删除action
+# 删除 action
 rm -f /usr/local/opnsense/service/conf/actions.d/actions_mihomo.conf
 
 # 删除菜单和缓存
 rm -rf /usr/local/opnsense/mvc/app/models/OPNsense/Magic
 
-# 删除inc
+# 删除 inc
 rm -f /usr/local/etc/inc/plugins.inc.d/mihomo.inc
 
-# 删除php
+# 删除 PHP 页面（新旧全部清理）
 rm -f /usr/local/www/services_mihomo.php
-rm -f /usr/local/www/services_mosdns.php
-rm -f /usr/local/www/status_mihomo_logs.php
-rm -f /usr/local/www/status_mihomo.php
-rm -f /usr/local/www/status_mosdns_logs.php
-rm -f /usr/local/www/status_mosdns.php
 rm -f /usr/local/www/sub.php
+rm -f /usr/local/www/status_mihomo.php
+rm -f /usr/local/www/status_mihomo_logs.php
+rm -f /usr/local/www/status_sub_logs.php
+
+# 新版 PHP 页面
+rm -f /usr/local/www/mihomo_dashboard.php
+rm -f /usr/local/www/mihomo_configuration.php
+rm -f /usr/local/www/mihomo_backup.php
+rm -f /usr/local/www/mihomo_subscriptions.php
+rm -f /usr/local/www/status_mihomo_traffic.php
+rm -f /usr/local/www/status_mihomo_health.php
+rm -f /usr/local/www/status_mihomo_update.php
+rm -rf /usr/local/www/includes
+
+# 旧版 mosdns 残留（静默清理）
+rm -f /usr/local/www/services_mosdns.php
+rm -f /usr/local/www/status_mosdns.php
+rm -f /usr/local/www/status_mosdns_logs.php
 
 # 删除程序
 rm -f /usr/local/bin/mihomo
 rm -f /usr/local/bin/mosdns
-rm -f /usr/local/bin/sub
+rm -f /usr/bin/sub
+
+# 删除语言文件
+rm -f /usr/local/share/locale/zh_CN/LC_MESSAGES/mihomo.mo
+
+# 清理日志
+rm -f /var/log/mihomo.log
+rm -f /var/log/mihomo_sub.log
+
+# 清理临时文件
+rm -f /tmp/mihomo-traffic-state.json
+rm -f /tmp/mihomo-latest-release.json
+rm -f /tmp/mihomo-geoip-release.json
+rm -f /tmp/mihomo-migrate-error.txt
+rm -f /tmp/mihomo-sub-cron.lock
+rm -f /tmp/mihomo-health-*.json
+rm -f /tmp/mihomo-update-*.json
+rm -f /tmp/config.yaml.*
+rm -f /tmp/sub-*.raw /tmp/sub-*.yaml
+
 log_success "程序文件删除完成"
 
 echo ""

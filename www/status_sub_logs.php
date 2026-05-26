@@ -1,20 +1,29 @@
 <?php
-require_once("guiconfig.inc");
+/**
+ * Subscription log endpoint.
+ *
+ * Query params:
+ *   ?lines=N — return last N lines (default 200)
+ */
+require_once 'guiconfig.inc';
 
-define('LOG_FILE', '/var/log/sub.log');
+define('SUB_LOG_FILE', '/var/log/mihomo_sub.log');
 
-header('Content-Type: text/plain; charset=UTF-8');
+$displayLines = min((int)($_GET['lines'] ?? 200), 2000);
 
-if (!is_file(LOG_FILE)) {
-    echo "日志文件不存在。";
+header('Content-Type: text/plain; charset=utf-8');
+header('Cache-Control: no-store');
+
+if (!is_file(SUB_LOG_FILE)) {
+    echo gettext('Subscription log file does not exist yet.');
     exit;
 }
 
-$log_lines = @file(LOG_FILE);
-if ($log_lines === false) {
-    echo "无法读取日志文件。";
+$logLines = @file(SUB_LOG_FILE);
+if ($logLines === false) {
+    echo gettext('Cannot read subscription log file.');
     exit;
 }
 
-$log_tail = array_slice($log_lines, -200);
-echo implode("", $log_tail);
+$logTail = array_slice($logLines, -$displayLines);
+echo implode('', $logTail);

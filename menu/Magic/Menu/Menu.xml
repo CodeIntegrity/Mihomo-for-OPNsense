@@ -1,8 +1,10 @@
 <menu>
     <VPN>
         <Magic VisibleName="Mihomo" cssClass="fa fa-lock fa-fw">
-            <mihomo VisibleName="Configuration" order="10" url="/services_mihomo.php"/>
-            <sub VisibleName="Subscribe" order="30" url="/sub.php"/>
+            <mihomoDashboard VisibleName="Dashboard" order="10" url="/mihomo_dashboard.php"/>
+            <mihomoConfiguration VisibleName="Configuration" order="20" url="/mihomo_configuration.php"/>
+            <mihomoBackup VisibleName="Backup" order="30" url="/mihomo_backup.php"/>
+            <mihomoSubscriptions VisibleName="Subscriptions" order="40" url="/mihomo_subscriptions.php"/>
         </Magic>
     </VPN>
 </menu>

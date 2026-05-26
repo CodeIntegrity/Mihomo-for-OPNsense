@@ -1,0 +1,691 @@
+# Mihomo for OPNsense — Chinese (Simplified) Translation
+# Copyright (C) 2024 https://pfchina.org/
+msgid ""
+msgstr ""
+"Project-Id-Version: Mihomo for OPNsense\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# === Dashboard ===
+msgid "Service Status"
+msgstr "服务状态"
+
+msgid "Start"
+msgstr "启动"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Restart"
+msgstr "重启"
+
+msgid "Open Dashboard UI"
+msgstr "打开 Dashboard UI"
+
+msgid "Dashboard listens on localhost. Access via LAN or allow firewall port."
+msgstr "Dashboard 监听在 localhost，请通过 LAN 访问或配置防火墙放行端口"
+
+msgid "Active Profile"
+msgstr "当前配置"
+
+msgid "nodes"
+msgstr "个节点"
+
+msgid "Updated"
+msgstr "更新于"
+
+msgid "No active profile"
+msgstr "无激活配置"
+
+msgid "Switch Profile"
+msgstr "切换配置"
+
+msgid "sub"
+msgstr "订阅"
+
+msgid "manual"
+msgstr "手动"
+
+msgid "Activate"
+msgstr "激活"
+
+msgid "Refresh Subscription"
+msgstr "刷新订阅"
+
+msgid "Health Check"
+msgstr "健康检查"
+
+msgid "Realtime Metrics"
+msgstr "实时指标"
+
+msgid "poll every 2s"
+msgstr "每 2 秒刷新"
+
+msgid "Upload"
+msgstr "上传"
+
+msgid "Download"
+msgstr "下载"
+
+msgid "Connections"
+msgstr "连接数"
+
+msgid "Memory"
+msgstr "内存"
+
+msgid "Recent Log"
+msgstr "最新日志"
+
+msgid "last 30 lines"
+msgstr "最近 30 行"
+
+msgid "mihomo is running"
+msgstr "mihomo 正在运行"
+
+msgid "mihomo is stopped"
+msgstr "mihomo 已停止"
+
+msgid "Reconnecting..."
+msgstr "重连中..."
+
+msgid "API unavailable, check external-controller settings"
+msgstr "API 不可用，请检查 external-controller 设置"
+
+msgid "Checking"
+msgstr "检查中"
+
+msgid "Alive"
+msgstr "存活"
+
+msgid "Dead"
+msgstr "失效"
+
+msgid "Health check failed"
+msgstr "健康检查失败"
+
+msgid "Subscription refresh triggered. Please wait..."
+msgstr "订阅刷新已触发，请稍候..."
+
+msgid "Active profile is not linked to a subscription."
+msgstr "当前配置未关联订阅源"
+
+msgid "Health check started. Results will appear below."
+msgstr "健康检查已启动，结果将在下方显示"
+
+msgid "Migration required!"
+msgstr "需要迁移！"
+
+msgid "Please run migrate.sh or re-run install.sh to upgrade your configuration to v2 format."
+msgstr "请运行 migrate.sh 或重新运行 install.sh 升级配置到 v2 格式"
+
+# === Configuration Page ===
+msgid "Settings"
+msgstr "设置"
+
+msgid "Override"
+msgstr "覆写"
+
+msgid "Profiles"
+msgstr "配置管理"
+
+msgid "YAML"
+msgstr "YAML 查看"
+
+msgid "Log"
+msgstr "日志"
+
+msgid "Updates"
+msgstr "在线更新"
+
+# Settings groups
+msgid "A: General"
+msgstr "A: 常规"
+
+msgid "B: External Controller"
+msgstr "B: 外部控制器"
+
+msgid "C: TUN"
+msgstr "C: TUN 设置"
+
+msgid "D: DNS"
+msgstr "D: DNS 设置"
+
+msgid "E: Sniffer"
+msgstr "E: 嗅探器"
+
+msgid "F: Auto Update"
+msgstr "F: 自动更新"
+
+msgid "HTTP Proxy Port"
+msgstr "HTTP 代理端口"
+
+msgid "SOCKS Proxy Port"
+msgstr "SOCKS 代理端口"
+
+msgid "Mixed Port"
+msgstr "混合端口"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Log Level"
+msgstr "日志级别"
+
+msgid "Bind Address"
+msgstr "绑定地址"
+
+msgid "Allow LAN"
+msgstr "允许局域网"
+
+msgid "IPv6"
+msgstr "IPv6"
+
+msgid "TCP Concurrent"
+msgstr "TCP 并发"
+
+msgid "Unified Delay"
+msgstr "统一延迟"
+
+msgid "Find Process Mode"
+msgstr "进程匹配模式"
+
+msgid "Client Fingerprint"
+msgstr "客户端指纹"
+
+msgid "Interface Name"
+msgstr "接口名称"
+
+msgid "External Controller"
+msgstr "外部控制器"
+
+msgid "Secret"
+msgstr "密钥"
+
+msgid "Generate"
+msgstr "生成"
+
+msgid "External UI Path"
+msgstr "外部 UI 路径"
+
+msgid "readonly"
+msgstr "只读"
+
+msgid "Enable TUN"
+msgstr "启用 TUN"
+
+msgid "Stack"
+msgstr "栈模式"
+
+msgid "Device"
+msgstr "设备"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "Auto Route"
+msgstr "自动路由"
+
+msgid "Strict Route"
+msgstr "严格路由"
+
+msgid "Auto Detect Interface"
+msgstr "自动检测接口"
+
+msgid "DNS Hijack"
+msgstr "DNS 劫持"
+
+msgid "Enable DNS"
+msgstr "启用 DNS"
+
+msgid "Use Hosts"
+msgstr "使用 Hosts"
+
+msgid "Enhanced Mode"
+msgstr "增强模式"
+
+msgid "Listen"
+msgstr "监听"
+
+msgid "Fake-IP Range"
+msgstr "Fake-IP 范围"
+
+msgid "Default Nameserver"
+msgstr "默认 DNS"
+
+msgid "Nameserver"
+msgstr "DNS 服务器"
+
+msgid "Fallback"
+msgstr "备用 DNS"
+
+msgid "Fake-IP Filter"
+msgstr "Fake-IP 过滤"
+
+msgid "Enable Sniffer"
+msgstr "启用嗅探器"
+
+msgid "Force DNS Mapping"
+msgstr "强制 DNS 映射"
+
+msgid "Parse Pure IP"
+msgstr "解析纯 IP"
+
+msgid "Override Destination"
+msgstr "覆写目标"
+
+msgid "HTTP Ports"
+msgstr "HTTP 端口"
+
+msgid "TLS Ports"
+msgstr "TLS 端口"
+
+msgid "QUIC Ports"
+msgstr "QUIC 端口"
+
+msgid "Skip Domains"
+msgstr "跳过域名"
+
+msgid "GitHub Mirror"
+msgstr "GitHub 镜像"
+
+msgid "GitHub Token"
+msgstr "GitHub Token"
+
+msgid "optional"
+msgstr "可选"
+
+msgid "Auto Update GeoIP (weekly)"
+msgstr "自动更新 GeoIP（每周）"
+
+msgid "Auto Update Dashboard UI (monthly)"
+msgstr "自动更新 Dashboard UI（每月）"
+
+msgid "Auto Update Core"
+msgstr "自动更新内核"
+
+msgid "not recommended"
+msgstr "不建议"
+
+msgid "Save Settings"
+msgstr "保存设置"
+
+msgid "Saving will validate and reload mihomo."
+msgstr "保存后将校验配置并重载 mihomo"
+
+msgid "Override fragment — subscription refresh will NOT overwrite this content. Use positional keys to insert rules/proxies/proxy-groups before or after subscription content."
+msgstr "覆写片段 — 订阅刷新不会覆盖此文件内容。使用约定 key 在订阅内容前后插入 rules/proxies/proxy-groups"
+
+msgid "Show example"
+msgstr "查看示例"
+
+msgid "Save Override"
+msgstr "保存覆写"
+
+msgid "Validate Only"
+msgstr "仅校验"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Override config is valid."
+msgstr "覆写配置校验通过"
+
+msgid "Validation failed:"
+msgstr "校验失败："
+
+msgid "Failed to save override:"
+msgstr "保存覆写失败："
+
+msgid "User override — subscription refresh will not overwrite this file."
+msgstr "用户覆写片段 — 订阅刷新不会覆盖此文件内容"
+
+msgid "Override reset to default."
+msgstr "覆写已重置为默认值"
+
+msgid "Cannot delete the active profile."
+msgstr "不能删除当前激活的配置"
+
+msgid "Profile \"%s\" deleted."
+msgstr "配置 \"%s\" 已删除"
+
+msgid "Invalid profile name. Only letters, numbers, hyphens and underscores allowed."
+msgstr "无效的配置名。仅允许字母、数字、连字符和下划线"
+
+msgid "Profile already exists."
+msgstr "配置已存在"
+
+msgid "Profile \"%s\" created."
+msgstr "配置 \"%s\" 已创建"
+
+msgid "subscription"
+msgstr "订阅"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "Nodes"
+msgstr "节点数"
+
+msgid "Last Updated"
+msgstr "最后更新"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "active"
+msgstr "激活中"
+
+msgid "View"
+msgstr "查看"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Delete this profile?"
+msgstr "确定删除此配置？"
+
+msgid "Create Empty Profile"
+msgstr "创建空配置"
+
+msgid "New profile name"
+msgstr "新配置名称"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "Loading..."
+msgstr "加载中..."
+
+msgid "This is the currently active merged config.yaml (read-only). To modify, use the Settings, Override, or Profiles tabs."
+msgstr "这是当前激活的合并后的 config.yaml（只读）。如需修改，请使用设置、覆写或配置管理标签页"
+
+msgid "Copy to Clipboard"
+msgstr "复制到剪贴板"
+
+msgid "Download"
+msgstr "下载"
+
+msgid "Pause Auto-refresh"
+msgstr "暂停自动刷新"
+
+msgid "Clear Log"
+msgstr "清空日志"
+
+msgid "lines"
+msgstr "行"
+
+msgid "All levels"
+msgstr "所有级别"
+
+msgid "Resume Auto-refresh"
+msgstr "恢复自动刷新"
+
+msgid "Clear the log file?"
+msgstr "确定清空日志文件？"
+
+msgid "Mihomo Core"
+msgstr "Mihomo 内核"
+
+msgid "Current"
+msgstr "当前"
+
+msgid "Latest"
+msgstr "最新"
+
+msgid "Check"
+msgstr "检查"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Update complete"
+msgstr "更新完成"
+
+msgid "Update failed"
+msgstr "更新失败"
+
+msgid "GeoIP Database"
+msgstr "GeoIP 数据库"
+
+msgid "Dashboard UI"
+msgstr "Dashboard UI"
+
+msgid "UI Variant"
+msgstr "UI 版本"
+
+msgid "Checking %s updates..."
+msgstr "正在检查 %s 更新..."
+
+msgid "%s update started. Do not leave this page."
+msgstr "%s 更新已启动，请勿离开此页面"
+
+# === Subscriptions Page ===
+msgid "Subscriptions"
+msgstr "订阅管理"
+
+msgid "Enabled"
+msgstr "启用"
+
+msgid "URL"
+msgstr "地址"
+
+msgid "Filter"
+msgstr "过滤"
+
+msgid "Interval"
+msgstr "间隔"
+
+msgid "Last Update"
+msgstr "最后更新"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Edit"
+msgstr "编辑"
+
+msgid "Delete this subscription?"
+msgstr "确定删除此订阅？"
+
+msgid "No subscriptions. Click \"Add Subscription\" to add one."
+msgstr "暂无订阅，点击\"添加订阅\"添加"
+
+msgid "Add Subscription"
+msgstr "添加订阅"
+
+msgid "Edit Subscription"
+msgstr "编辑订阅"
+
+msgid "Only letters, numbers, hyphens and underscores."
+msgstr "仅允许字母、数字、连字符和下划线"
+
+msgid "Custom User-Agent"
+msgstr "自定义 User-Agent"
+
+msgid "Auto Update Interval"
+msgstr "自动更新间隔"
+
+msgid "Off"
+msgstr "关闭"
+
+msgid "hour"
+msgstr "小时"
+
+msgid "hours"
+msgstr "小时"
+
+msgid "Include Keyword"
+msgstr "包含关键词"
+
+msgid "comma separated"
+msgstr "逗号分隔"
+
+msgid "Exclude Keyword"
+msgstr "排除关键词"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Subscription Log"
+msgstr "订阅日志"
+
+msgid "Subscription added."
+msgstr "订阅已添加"
+
+msgid "Subscription updated."
+msgstr "订阅已更新"
+
+msgid "Subscription deleted."
+msgstr "订阅已删除"
+
+msgid "Failed to save:"
+msgstr "保存失败："
+
+msgid "Failed to delete:"
+msgstr "删除失败："
+
+msgid "Subscription \"%s\" refresh triggered."
+msgstr "订阅 \"%s\" 刷新已触发"
+
+msgid "Subscription log cleared."
+msgstr "订阅日志已清空"
+
+msgid "Name and URL are required."
+msgstr "名称和地址为必填项"
+
+# === Backup Page ===
+msgid "Export Configuration"
+msgstr "导出配置"
+
+msgid "Contains sensitive data (API secret, subscription URLs, proxy credentials). Store securely."
+msgstr "包含敏感数据（API 密钥、订阅地址、代理凭证）。请妥善保管"
+
+msgid "Encrypt with AES-256-CBC (password required)"
+msgstr "使用 AES-256-CBC 加密（需要密码）"
+
+msgid "Enter encryption password"
+msgstr "输入加密密码"
+
+msgid "Download Backup"
+msgstr "下载备份"
+
+msgid "Import Configuration"
+msgstr "导入配置"
+
+msgid "Backup file is encrypted (enter password)"
+msgstr "备份文件已加密（输入密码）"
+
+msgid "Enter decryption password"
+msgstr "输入解密密码"
+
+msgid "Conflict policy"
+msgstr "冲突策略"
+
+msgid "Merge (keep existing items not in backup)"
+msgstr "合并（保留备份中不存在的项目）"
+
+msgid "Overwrite all"
+msgstr "全部覆盖"
+
+msgid "Import Backup"
+msgstr "导入备份"
+
+msgid "Recent Local Backups"
+msgstr "最近本地备份"
+
+msgid "Date"
+msgstr "日期"
+
+msgid "Size"
+msgstr "大小"
+
+msgid "Restore"
+msgstr "恢复"
+
+msgid "Restore this backup? Current config will be replaced."
+msgstr "确定恢复此备份？当前配置将被替换"
+
+msgid "Delete this backup?"
+msgstr "确定删除此备份？"
+
+msgid "No local backups found."
+msgstr "未找到本地备份"
+
+msgid "No configuration files to export."
+msgstr "没有可导出的配置文件"
+
+msgid "Failed to create backup archive."
+msgstr "创建备份归档失败"
+
+msgid "File upload failed."
+msgstr "文件上传失败"
+
+msgid "Decryption failed. Wrong password?"
+msgstr "解密失败，密码错误？"
+
+msgid "Import failed."
+msgstr "导入失败"
+
+msgid "Backup deleted."
+msgstr "备份已删除"
+
+# === Library messages ===
+msgid "Failed to write temporary config file."
+msgstr "临时配置文件写入失败"
+
+msgid "Config validation failed:"
+msgstr "配置校验失败："
+
+msgid "Failed to replace config file."
+msgstr "替换配置文件失败"
+
+msgid "Config saved but reload failed:"
+msgstr "配置已保存但重载失败："
+
+msgid "Config saved and reloaded successfully."
+msgstr "配置已保存并重载成功"
+
+msgid "Config hot-reloaded."
+msgstr "配置已热重载"
+
+msgid "Service restarted and running."
+msgstr "服务已重启并运行中"
+
+msgid "Service restart failed or not running after 10s."
+msgstr "服务重启失败或 10 秒后未运行"
+
+msgid "Profile \"%s\" not found."
+msgstr "配置 \"%s\" 未找到"
+
+msgid "Failed to write active profile:"
+msgstr "写入激活配置失败："
+
+msgid "Backup file not found."
+msgstr "备份文件未找到"
+
+msgid "Failed to extract backup."
+msgstr "解压备份失败"
+
+msgid "Failed to write base.yaml:"
+msgstr "写入 base.yaml 失败："
+
+# === Log endpoint ===
+msgid "Log file not found."
+msgstr "日志文件未找到"
+
+msgid "Subscription log file does not exist yet."
+msgstr "订阅日志文件尚不存在"
+
+msgid "Cannot read subscription log file."
+msgstr "无法读取订阅日志文件"

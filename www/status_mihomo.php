@@ -1,14 +1,22 @@
 <?php
-// status_mihomo.php
-header('Content-Type: application/json');
+/**
+ * Mihomo service status endpoint.
+ *
+ * Returns JSON: {status, pid, uptime}
+ */
+require_once __DIR__ . '/includes/mihomo_lib.inc.php';
 
-// 通过 OPNsense configd action 检查服务状态，和页面控制逻辑保持一致。
-exec("/usr/local/sbin/configctl mihomo status 2>&1", $output, $return_var);
-$status_output = implode("\n", $output);
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
 
-if (stripos($status_output, 'is running') !== false) {
-    echo json_encode(['status' => 'running']);
-} else {
-    echo json_encode(['status' => 'stopped']);
+try {
+    $status = getMihomoStatus();
+    echo json_encode($status);
+} catch (Exception $e) {
+    echo json_encode([
+        'status' => 'stopped',
+        'pid' => null,
+        'uptime' => null,
+        'error' => $e->getMessage(),
+    ]);
 }
-?>

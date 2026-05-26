@@ -84,12 +84,23 @@ install_pkg_if_missing() {
 log_step "创建目录..."
 run_or_die mkdir -p "$CONF_DIR/mihomo"
 
+# 清理旧版 mosdns 残留文件
+if [ -f "$WWW_DIR/services_mosdns.php" ] || [ -f "$BIN_DIR/mosdns" ]; then
+	log_step "清理旧版 mosdns 残留..."
+	rm -f "$WWW_DIR/services_mosdns.php" "$WWW_DIR/status_mosdns.php"
+	rm -f "$WWW_DIR/status_mosdns_logs.php" "$BIN_DIR/mosdns"
+	log_success "旧版 mosdns 文件已清理"
+fi
+
 # 复制文件
 log_step "复制文件并部署组件..."
 log_info "生成菜单..."
 log_info "生成服务..."
 log_info "添加权限..."
 run_or_die chmod +x ./bin/* ./rc.d/*
+# migrate.sh 和 conf/sub/*.sh 可能不存在（非首次安装），失败不终止
+chmod +x ./migrate.sh 2>/dev/null || true
+chmod +x ./conf/sub/*.sh 2>/dev/null || true
 run_or_die cp -f bin/* "$BIN_DIR/"
 run_or_die cp -f www/* "$WWW_DIR/"
 run_or_die cp -f rc.d/* "$RC_DIR/"
@@ -98,14 +109,89 @@ run_or_die cp -f plugins/* "$PLUGINS/"
 run_or_die cp -f actions/* "$ACTIONS/"
 run_or_die cp -R -f menu/* "$MENU_DIR/"
 run_or_die cp -R -f conf/* "$CONF_DIR/mihomo/"
+
+# 部署新版 PHP 公共库
+if [ -d ./www/includes ]; then
+	mkdir -p "$WWW_DIR/includes"
+	run_or_die cp -f ./www/includes/* "$WWW_DIR/includes/"
+	log_success "PHP 公共库已部署"
+fi
 log_success "文件复制完成"
+
+# 创建 v2 目录结构
+log_step "创建 v2 目录结构..."
+mkdir -p "$CONF_DIR/mihomo/profiles"
+mkdir -p "$CONF_DIR/mihomo/backups"
+chown -R root:www "$CONF_DIR/mihomo" 2>/dev/null || true
+chmod 750 "$CONF_DIR/mihomo"
+chmod 750 "$CONF_DIR/mihomo/profiles"
+chmod 750 "$CONF_DIR/mihomo/backups"
+log_success "目录结构就绪"
+
+# 检测是否需要迁移
+if [ ! -f "$CONF_DIR/mihomo/base.yaml" ] && [ -f "$CONF_DIR/mihomo/config.yaml" ]; then
+	log_step "检测到旧版配置，执行 v2 迁移..."
+	if [ -f ./migrate.sh ]; then
+		bash ./migrate.sh
+		MIGRATE_RC=$?
+	else
+		log_warn "migrate.sh 未找到，跳过迁移"
+		MIGRATE_RC=0
+	fi
+
+	if [ "$MIGRATE_RC" != "0" ]; then
+		log_error "配置迁移失败！保留旧文件不动，拒绝注册新 UI。"
+		log_error "请手动解决后重新运行 install.sh，或从 Backup 页面恢复。"
+		rm -f "$MENU_DIR/Magic/Menu/Menu.xml"
+		rm -f "$WWW_DIR/mihomo_dashboard.php" "$WWW_DIR/mihomo_configuration.php"
+		rm -f "$WWW_DIR/mihomo_backup.php" "$WWW_DIR/mihomo_subscriptions.php"
+		rm -f "$WWW_DIR/includes/mihomo_lib.inc.php"
+			rm -f "$WWW_DIR/status_mihomo_traffic.php" "$WWW_DIR/status_mihomo_health.php"
+			rm -f "$WWW_DIR/status_mihomo_update.php"
+			rm -f "$CONF_DIR/mihomo/sub/sub_cron.sh"
+			rm -f "$CONF_DIR/mihomo/sub/update_core.sh" "$CONF_DIR/mihomo/sub/update_geoip.sh"
+			rm -f "$CONF_DIR/mihomo/sub/update_ui.sh" "$CONF_DIR/mihomo/sub/mihomo_health_check.sh"
+		exit 1
+	fi
+	log_success "迁移完成"
+elif [ -f "$CONF_DIR/mihomo/base.yaml" ]; then
+	log_warn "检测到 base.yaml，已迁移，跳过"
+else
+	log_warn "新安装，创建默认配置..."
+	if [ -f "$CONF_DIR/mihomo/config.yaml" ]; then
+		cp "$CONF_DIR/mihomo/config.yaml" "$CONF_DIR/mihomo/base.yaml"
+		log_info "已从 config.yaml 创建默认 base.yaml"
+	fi
+	if [ ! -f "$CONF_DIR/mihomo/override.yaml" ]; then
+		cat > "$CONF_DIR/mihomo/override.yaml" <<'OVRDEOF'
+# 用户覆写片段 — 订阅刷新不会覆盖此文件内容。
+OVRDEOF
+	fi
+	if [ ! -f "$CONF_DIR/mihomo/subs.json" ]; then
+		echo '[]' > "$CONF_DIR/mihomo/subs.json"
+	fi
+	if [ ! -f "$CONF_DIR/mihomo/active.json" ]; then
+		echo '{"profile": "legacy"}' > "$CONF_DIR/mihomo/active.json"
+	fi
+fi
+
+# 统一设置文件权限
+log_step "设置文件权限..."
+chmod 640 "$CONF_DIR/mihomo/base.yaml" 2>/dev/null || true
+chmod 640 "$CONF_DIR/mihomo/override.yaml" 2>/dev/null || true
+chmod 640 "$CONF_DIR/mihomo/subs.json" 2>/dev/null || true
+chmod 640 "$CONF_DIR/mihomo/active.json" 2>/dev/null || true
+chmod 640 "$CONF_DIR/mihomo/config.yaml" 2>/dev/null || true
+chmod 640 "$CONF_DIR/mihomo/profiles/"*.yaml 2>/dev/null || true
+log_success "权限设置完成"
 
 # 新建订阅程序
 log_step "添加订阅..."
-cat>/usr/bin/sub<<EOF
-# 启动mihomo订阅程序
-bash /usr/local/etc/mihomo/sub/sub.sh
-EOF
+cat>/usr/bin/sub<<'SUBEOF'
+#!/bin/bash
+# Mihomo subscription update entry — delegates to cron巡检 script
+bash /usr/local/etc/mihomo/sub/sub_cron.sh
+SUBEOF
 run_or_die chmod +x /usr/bin/sub
 log_success "订阅程序添加完成"
 
@@ -393,6 +479,17 @@ rm -f /var/lib/php/tmp/opnsense_menu_cache.xml
 rm -f /var/lib/php/tmp/opnsense_acl_cache.json
 log_success "菜单缓存清理完成"
 
+# 部署语言文件
+log_step "部署语言文件..."
+LANG_DEST="/usr/local/share/locale/zh_CN/LC_MESSAGES"
+if [ -f ./lang/zh_CN/LC_MESSAGES/mihomo.mo ]; then
+	mkdir -p "$LANG_DEST"
+	run_or_die cp -f ./lang/zh_CN/LC_MESSAGES/mihomo.mo "$LANG_DEST/"
+	log_success "中文语言文件已部署"
+else
+	log_warn "语言文件未找到，跳过"
+fi
+
 # 重新载入configd
 log_step "重新载入 configd..."
 if service configd restart > /dev/null 2>&1; then
@@ -421,5 +518,5 @@ fi
 echo ""
 
 # 完成提示
-log_success "安装完毕，请导航到 VPN > 代理 进行配置。配置过程请参考教程。"
+log_success "安装完毕，请导航到 VPN > Mihomo 进行配置。"
 echo ""

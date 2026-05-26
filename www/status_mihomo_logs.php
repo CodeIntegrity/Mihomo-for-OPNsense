@@ -1,34 +1,72 @@
 <?php
-$log_file = "/var/log/mihomo.log";
-$max_lines = 5000;
-$display_lines = 200; // 前端仅显示最近 200 行
+/**
+ * Mihomo log viewer endpoint.
+ *
+ * Query params:
+ *   ?lines=N   — return last N lines (default 200, max 5000)
+ *   ?level=X   — filter by log level (error/warning/info/debug)
+ *   ?offset=N  — start from line N
+ */
+require_once __DIR__ . '/includes/mihomo_lib.inc.php';
 
-if (!file_exists($log_file)) {
-    echo "[错误] 日志文件未找到！";
+$logFile = MIHOMO_LOG;
+$maxLines = 5000;
+$displayLines = min((int)($_GET['lines'] ?? 200), $maxLines);
+$levelFilter = $_GET['level'] ?? '';
+$offset = (int)($_GET['offset'] ?? 0);
+
+// Handle clear action via POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'clear') {
+    if (file_exists($logFile) && is_writable($logFile)) {
+        file_put_contents($logFile, '', LOCK_EX);
+    }
+    header('Content-Type: text/plain; charset=utf-8');
+    echo '';
     exit;
 }
 
-$log = new SplFileObject($log_file, 'r');
+header('Content-Type: text/plain; charset=utf-8');
+header('Cache-Control: no-store');
+
+if (!file_exists($logFile)) {
+    echo gettext('Log file not found.');
+    exit;
+}
+
+$log = new SplFileObject($logFile, 'r');
 $log->seek(PHP_INT_MAX);
-$total_lines = $log->key();
+$totalLines = $log->key();
 
-$log_content = [];
 $log->rewind();
+$startLine = max(0, $totalLines - $maxLines);
+$log->seek($startLine);
 
-// 只保留最后 $max_lines 行
-$start_line = max(0, $total_lines - $max_lines);
-$log->seek($start_line);
-
+$lines = [];
 while (!$log->eof()) {
-    $log_content[] = trim($log->fgets());
+    $line = trim($log->fgets());
+    if ($line === '') continue;
+    $lines[] = $line;
 }
 
-// 仅在日志超出 $max_lines 时重写文件
-if ($total_lines > $max_lines) {
-    file_put_contents($log_file, implode("\n", $log_content) . "\n");
+// Trim old lines if too many
+if ($totalLines > $maxLines) {
+    file_put_contents($logFile, implode("\n", $lines) . "\n");
 }
 
-// 取最近 $display_lines 行显示
-$display_content = array_slice($log_content, -$display_lines);
-echo implode("\n", $display_content);
-?>
+// Apply level filter (simple string match)
+if ($levelFilter && in_array($levelFilter, ['error', 'warning', 'info', 'debug'])) {
+    $upperLevel = strtoupper($levelFilter);
+    $lines = array_filter($lines, function($l) use ($upperLevel) {
+        return stripos($l, $upperLevel) !== false || stripos($l, 'level=' . $upperLevel) !== false;
+    });
+    $lines = array_values($lines);
+}
+
+// Apply offset
+if ($offset > 0) {
+    $lines = array_slice($lines, $offset);
+}
+
+// Return last N lines
+$lines = array_slice($lines, -$displayLines);
+echo implode("\n", $lines);
