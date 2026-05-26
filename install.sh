@@ -115,6 +115,39 @@ run_or_die cp -f plugins/* "$PLUGINS/"
 run_or_die cp -f actions/* "$ACTIONS/"
 run_or_die cp -R -f menu/* "$MENU_DIR/"
 
+# 菜单 VisibleName 走 OPNsense 默认 gettext 域翻译；OPNsense 字典里没有
+# "Backup"/"Subscriptions" 这类条目。检测 GUI 语言为 zh_CN 时，把菜单文本
+# 替换成中文字面（gettext 查不到原样返回 → 显示中文）。
+# 其它语言保留英文，让 OPNsense 字典自动翻译能翻的部分。
+GUI_LANG=$(awk '
+  /<webgui>/   { in_g = 1 }
+  /<\/webgui>/ { in_g = 0 }
+  in_g && /<language>/ {
+    line = $0
+    sub(/.*<language>/, "", line)
+    sub(/<\/language>.*/, "", line)
+    print line
+    exit
+  }
+' "$CONFIG_FILE" 2>/dev/null)
+
+if [ "$GUI_LANG" = "zh_CN" ]; then
+  MENU_XML="$MENU_DIR/Magic/Menu/Menu.xml"
+  if [ -f "$MENU_XML" ]; then
+    TMP_MENU=$(mktemp)
+    awk '
+      {
+        gsub(/VisibleName="Dashboard"/,     "VisibleName=\"仪表盘\"")
+        gsub(/VisibleName="Configuration"/, "VisibleName=\"配置\"")
+        gsub(/VisibleName="Backup"/,        "VisibleName=\"备份\"")
+        gsub(/VisibleName="Subscriptions"/, "VisibleName=\"订阅\"")
+        print
+      }
+    ' "$MENU_XML" > "$TMP_MENU" && mv "$TMP_MENU" "$MENU_XML"
+    log_info "  菜单标签已本地化为中文 (zh_CN)"
+  fi
+fi
+
 # 资产/脚本：始终更新（Country.mmdb / sub 脚本 / 内置 UI）
 mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mihomo/sub" "$CONF_DIR/mihomo/ui"
 if [ -f ./conf/Country.mmdb ]; then
