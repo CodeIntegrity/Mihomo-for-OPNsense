@@ -16,7 +16,19 @@ $message_type = 'info';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'activate_profile') {
+    if ($action === 'start') {
+        list($ok, $msg) = startMihomo();
+        $message = $msg;
+        $message_type = $ok ? 'success' : 'danger';
+    } elseif ($action === 'stop') {
+        list($ok, $msg) = stopMihomo();
+        $message = $msg;
+        $message_type = $ok ? 'success' : 'danger';
+    } elseif ($action === 'restart') {
+        list($ok, $msg) = restartMihomo();
+        $message = $msg;
+        $message_type = $ok ? 'success' : 'danger';
+    } elseif ($action === 'activate_profile') {
         $target = $_POST['profile'] ?? '';
         if ($target && isset($profiles[$target])) {
             list($ok, $msg) = activateProfile($target);

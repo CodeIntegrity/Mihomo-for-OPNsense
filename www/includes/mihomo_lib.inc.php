@@ -210,6 +210,36 @@ function restartMihomo() {
     return [false, dgettext('mihomo', 'Service restart failed or not running after 10s.')];
 }
 
+function startMihomo() {
+    list($output, $rc) = mihomoExecCommand('/usr/local/sbin/configctl mihomo start');
+
+    // Poll up to 10s for running state
+    for ($i = 0; $i < 20; $i++) {
+        usleep(500000);
+        $status = getMihomoStatus();
+        if ($status['status'] === 'running') {
+            return [true, dgettext('mihomo', 'Service started and running.')];
+        }
+    }
+
+    return [false, dgettext('mihomo', 'Service start failed or not running after 10s.')];
+}
+
+function stopMihomo() {
+    list($output, $rc) = mihomoExecCommand('/usr/local/sbin/configctl mihomo stop');
+
+    // Poll up to 10s for stopped state
+    for ($i = 0; $i < 20; $i++) {
+        usleep(500000);
+        $status = getMihomoStatus();
+        if ($status['status'] !== 'running') {
+            return [true, dgettext('mihomo', 'Service stopped.')];
+        }
+    }
+
+    return [false, dgettext('mihomo', 'Service stop failed or still running after 10s.')];
+}
+
 /**
  * Get mihomo service status with pid and uptime.
  *
