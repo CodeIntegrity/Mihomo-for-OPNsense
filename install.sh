@@ -313,7 +313,14 @@ else
         (has_fw_self?1:0), (has_ft_self?1:0), (has_rules_self?1:0)
     }
   ' "$CONFIG_FILE")
-  read SAW_FW SAW_FT SAW_RULES HAS_FW_SELF HAS_FT_SELF HAS_RULES_SELF <<< "$DETECT"
+  # POSIX sh 兼容：用 set -- 拆位置参数，不用 bash here-string
+  set -- $DETECT
+  SAW_FW=$1
+  SAW_FT=$2
+  SAW_RULES=$3
+  HAS_FW_SELF=$4
+  HAS_FT_SELF=$5
+  HAS_RULES_SELF=$6
 
   if [ "$HAS_FW_SELF" = "1" ] || [ "$HAS_FT_SELF" = "1" ] || [ "$HAS_RULES_SELF" = "1" ]; then
     log_error "检测到自闭合的 <Firewall/> / <Filter/> / <rules/>，需要手动展开后再运行，已跳过自动插入"
