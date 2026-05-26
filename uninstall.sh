@@ -271,13 +271,7 @@ rm -f /var/lib/php/tmp/opnsense_menu_cache.xml
 rm -f /var/lib/php/tmp/opnsense_acl_cache.json
 log_success "菜单缓存清理完成"
 
-# 重启所有服务
-log_step "重新应用所有更改，请稍等..."
-if /usr/local/etc/rc.reload_all >/dev/null 2>&1; then
-    log_success "系统配置重载完成"
-else
-    log_error "系统配置重载失败"
-fi
+# 重启服务
 
 if service configd restart > /dev/null 2>&1; then
     log_success "configd 重启完成"

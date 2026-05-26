@@ -46,5 +46,5 @@ function mihomo_syslog()
 
 function mihomo_restart()
 {
-    exec('sh /usr/local/etc/rc.d/mihomo restart');
+    exec('/usr/local/sbin/configctl mihomo restart');
 }

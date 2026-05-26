@@ -57,25 +57,48 @@ log_step() {
     log "$BLUE" "STEP" "$1"
 }
 
+run_or_die() {
+  "$@" || {
+    log_error "命令执行失败：$*"
+    exit 1
+  }
+}
+
+install_pkg_if_missing() {
+  local pkg_name="$1"
+
+  if pkg info -q "$pkg_name" > /dev/null 2>&1; then
+    log_warn "$pkg_name 已安装，跳过"
+    return 0
+  fi
+
+  if pkg install -y "$pkg_name" > /dev/null 2>&1; then
+    log_success "$pkg_name 安装完成"
+  else
+    log_error "$pkg_name 安装失败"
+    exit 1
+  fi
+}
+
 # 创建目录
 log_step "创建目录..."
-mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mosdns" || log_error "目录创建失败！"
+run_or_die mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mosdns"
 
 # 复制文件
 log_step "复制文件并部署组件..."
 log_info "生成菜单..."
 log_info "生成服务..."
 log_info "添加权限..."
-chmod +x ./bin/* ./rc.d/*
-cp -f bin/* "$BIN_DIR/" || log_error "bin 文件复制失败！"
-cp -f www/* "$WWW_DIR/" || log_error "www 文件复制失败！"
-cp -f rc.d/* "$RC_DIR/" || log_error "rc.d 文件复制失败！"
-cp -f rc.conf/* "$RC_CONF/" || log_error "rc.conf 文件复制失败！"
-cp -f plugins/* "$PLUGINS/" || log_error "plugins 文件复制失败！"
-cp -f actions/* "$ACTIONS/" || log_error "actions 文件复制失败！"
-cp -R -f menu/* "$MENU_DIR/" || log_error "menu 文件复制失败！"
-cp -R -f conf/* "$CONF_DIR/mihomo/" || log_error "conf 文件复制失败！"
-cp -R -f mosdns/* "$CONF_DIR/mosdns/" || log_error "mosdns 文件复制失败！"
+run_or_die chmod +x ./bin/* ./rc.d/*
+run_or_die cp -f bin/* "$BIN_DIR/"
+run_or_die cp -f www/* "$WWW_DIR/"
+run_or_die cp -f rc.d/* "$RC_DIR/"
+run_or_die cp -f rc.conf/* "$RC_CONF/"
+run_or_die cp -f plugins/* "$PLUGINS/"
+run_or_die cp -f actions/* "$ACTIONS/"
+run_or_die cp -R -f menu/* "$MENU_DIR/"
+run_or_die cp -R -f conf/* "$CONF_DIR/mihomo/"
+run_or_die cp -R -f mosdns/* "$CONF_DIR/mosdns/"
 log_success "文件复制完成"
 
 # 新建订阅程序
@@ -84,20 +107,14 @@ cat>/usr/bin/sub<<EOF
 # 启动mihomo订阅程序
 bash /usr/local/etc/mihomo/sub/sub.sh
 EOF
-chmod +x /usr/bin/sub
+run_or_die chmod +x /usr/bin/sub
 log_success "订阅程序添加完成"
 
-# 安装bash
-log_step "检查并安装 bash..."
-if ! pkg info -q bash > /dev/null 2>&1; then
-  if pkg install -y bash > /dev/null 2>&1; then
-    log_success "bash 安装完成"
-  else
-    log_error "bash 安装失败"
-  fi
-else
-  log_warn "bash 已安装，跳过"
-fi
+# 安装运行依赖
+log_step "检查并安装运行依赖..."
+install_pkg_if_missing bash
+install_pkg_if_missing jq
+install_pkg_if_missing curl
 
 # 启动Tun接口
 log_step "启动 mihomo 与 mosdns..."
@@ -163,7 +180,7 @@ END {
 }
 ' "$CONFIG_FILE")
 
-log_info "tun_3000 目标接口块：$TARGET_IF_BLOCK"
+log_info "tun_3000 目标接口：$TARGET_IF_BLOCK"
 
 # 添加tun接口
 log_step "添加 tun_3000 接口..."

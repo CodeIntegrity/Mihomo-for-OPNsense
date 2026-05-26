@@ -25,8 +25,8 @@ function execBackgroundCommand($command) {
 
 // 获取服务状态
 function getServiceStatus() {
-    list($output, $return_var) = execCommand("service mosdns onestatus");
-    return $return_var === 0 ? "running" : "stopped";
+    list($output, $return_var) = execCommand("/usr/local/sbin/configctl mosdns status");
+    return stripos($output, 'is running') !== false ? "running" : "stopped";
 }
 
 // 保存配置文件
@@ -89,18 +89,18 @@ function handleServiceAction($action) {
 
     // 启动改为后台执行，避免页面等待过久
     if ($action === 'start') {
-        execBackgroundCommand("service mosdns start");
+        execBackgroundCommand("/usr/local/sbin/configctl mosdns start");
         return [$messages['start'][0], "success"];
     }
 
     // 重启改为后台执行，避免超时
     if ($action === 'restart') {
-        execBackgroundCommand("service mosdns restart");
+        execBackgroundCommand("/usr/local/sbin/configctl mosdns restart");
         return [$messages['restart'][0], "success"];
     }
 
     // 停止保持同步执行
-    list($output, $return_var) = execCommand("service mosdns stop");
+    list($output, $return_var) = execCommand("/usr/local/sbin/configctl mosdns stop");
 
     // 特殊处理：已经停止的情况
     if ($action === 'stop' && stripos($output, 'not running') !== false) {

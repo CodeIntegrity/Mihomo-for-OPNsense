@@ -28,8 +28,8 @@ function execBackgroundCommand($command)
 // 获取服务状态
 function getServiceStatus()
 {
-    list($output, $return_var) = execCommand("service mihomo onestatus");
-    return $return_var === 0 ? "running" : "stopped";
+    list($output, $return_var) = execCommand("/usr/local/sbin/configctl mihomo status");
+    return stripos($output, 'is running') !== false ? "running" : "stopped";
 }
 
 // 校验配置文件
@@ -133,18 +133,18 @@ function handleServiceAction($action)
 
     // 启动改为后台执行，避免页面等待过久
     if ($action === 'start') {
-        execBackgroundCommand("service mihomo start");
+        execBackgroundCommand("/usr/local/sbin/configctl mihomo start");
         return [$messages['start'][0], "success"];
     }
 
     // 重启继续后台执行，避免 504 超时
     if ($action === 'restart') {
-        execBackgroundCommand("service mihomo restart");
+        execBackgroundCommand("/usr/local/sbin/configctl mihomo restart");
         return [$messages['restart'][0], "success"];
     }
 
     // 停止保持同步执行
-    list($output, $return_var) = execCommand("service mihomo stop");
+    list($output, $return_var) = execCommand("/usr/local/sbin/configctl mihomo stop");
 
     // 特殊处理：已经停止的情况
     if ($action === 'stop' && stripos($output, 'not running') !== false) {

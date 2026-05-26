@@ -2,10 +2,11 @@
 // status_mihomo.php
 header('Content-Type: application/json');
 
-// 检查mihomo进程是否存在
-exec("pgrep -x mihomo", $output, $return_var);
+// 通过 OPNsense configd action 检查服务状态，和页面控制逻辑保持一致。
+exec("/usr/local/sbin/configctl mihomo status 2>&1", $output, $return_var);
+$status_output = implode("\n", $output);
 
-if ($return_var === 0) {
+if (stripos($status_output, 'is running') !== false) {
     echo json_encode(['status' => 'running']);
 } else {
     echo json_encode(['status' => 'stopped']);
