@@ -410,9 +410,6 @@ msgstr "这是当前激活的合并后的 config.yaml（只读）。如需修改
 msgid "Copy to Clipboard"
 msgstr "复制到剪贴板"
 
-msgid "Download"
-msgstr "下载"
-
 msgid "Pause Auto-refresh"
 msgstr "暂停自动刷新"
 
