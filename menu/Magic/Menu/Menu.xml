@@ -1,7 +1,7 @@
 <menu>
     <VPN>
-        <Magic VisibleName="Proxy" cssClass="fa fa-lock fa-fw">
-            <mihomo VisibleName="Mihomo" order="10" url="/services_mihomo.php"/>
+        <Magic VisibleName="Mihomo" cssClass="fa fa-lock fa-fw">
+            <mihomo VisibleName="Configuration" order="10" url="/services_mihomo.php"/>
             <sub VisibleName="Subscribe" order="30" url="/sub.php"/>
         </Magic>
     </VPN>
