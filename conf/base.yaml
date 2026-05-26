@@ -1,0 +1,69 @@
+# Mihomo 基础设施配置（v2 分层模型）
+#
+# 此文件管辖 general / external-controller / tun / dns / sniffer 等基础设施字段。
+# proxies / proxy-groups / rules 不在此处，由 profiles/ 管理。
+# 用户覆写片段请写到 override.yaml。
+
+port: 7890
+socks-port: 7891
+mode: rule
+allow-lan: true
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+find-process-mode: 'off'
+global-client-fingerprint: chrome
+
+external-controller: '0.0.0.0:9090'
+external-ui: /usr/local/etc/mihomo/ui
+secret: ''
+
+tun:
+  enable: true
+  stack: gvisor
+  device: tun_3000
+  mtu: 9000
+  auto-route: true
+  strict-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  default-nameserver:
+    - 127.0.0.1:5355
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - https://dns.google/dns-query
+    - https://cloudflare-dns.com/dns-query
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports:
+        - '80'
+        - '8080-8880'
+      override-destination: true
+    TLS:
+      ports:
+        - '443'
+        - '8443'
+    QUIC:
+      ports:
+        - '443'
+        - '8443'
+  skip-domain:
+    - '+.push.apple.com'

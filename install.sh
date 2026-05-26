@@ -105,8 +105,7 @@ if ! file -b ./bin/mihomo 2>/dev/null | grep -qE 'ELF.*executable|FreeBSD'; then
 fi
 log_info "添加权限..."
 run_or_die chmod +x ./bin/* ./rc.d/*
-# migrate.sh 和 conf/sub/*.sh 可能不存在（非首次安装），失败不终止
-chmod +x ./migrate.sh 2>/dev/null || true
+# conf/sub/*.sh 可能不存在（非首次安装），失败不终止
 chmod +x ./conf/sub/*.sh 2>/dev/null || true
 run_or_die cp -f bin/* "$BIN_DIR/"
 run_or_die cp -f www/*.php "$WWW_DIR/"
@@ -115,7 +114,19 @@ run_or_die cp -f rc.conf/* "$RC_CONF/"
 run_or_die cp -f plugins/* "$PLUGINS/"
 run_or_die cp -f actions/* "$ACTIONS/"
 run_or_die cp -R -f menu/* "$MENU_DIR/"
-run_or_die cp -R -f conf/* "$CONF_DIR/mihomo/"
+
+# 资产/脚本：始终更新（Country.mmdb / sub 脚本 / 内置 UI）
+mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mihomo/sub" "$CONF_DIR/mihomo/ui"
+if [ -f ./conf/Country.mmdb ]; then
+	run_or_die cp -f ./conf/Country.mmdb "$CONF_DIR/mihomo/"
+fi
+if [ -d ./conf/sub ]; then
+	# 排除 env 占位文件，避免覆盖用户残留
+	find ./conf/sub -maxdepth 1 -type f ! -name env -exec cp -f {} "$CONF_DIR/mihomo/sub/" \;
+fi
+if [ -d ./conf/ui ]; then
+	run_or_die cp -Rf ./conf/ui/. "$CONF_DIR/mihomo/ui/"
+fi
 
 # 部署新版 PHP 公共库
 if [ -d ./www/includes ]; then
@@ -129,61 +140,35 @@ log_success "文件复制完成"
 log_step "创建 v2 目录结构..."
 mkdir -p "$CONF_DIR/mihomo/profiles"
 mkdir -p "$CONF_DIR/mihomo/backups"
+log_success "目录结构就绪"
+
+# 初始化 v2 配置文件：用户数据只在缺失时写入，避免覆盖
+log_step "初始化 v2 配置文件..."
+init_if_missing() {
+	local src="$1" dst="$2"
+	if [ ! -e "$dst" ] && [ -e "$src" ]; then
+		cp -R "$src" "$dst"
+		log_info "  初始化 $(basename "$dst")"
+	fi
+}
+init_if_missing ./conf/base.yaml      "$CONF_DIR/mihomo/base.yaml"
+init_if_missing ./conf/override.yaml  "$CONF_DIR/mihomo/override.yaml"
+init_if_missing ./conf/subs.json      "$CONF_DIR/mihomo/subs.json"
+init_if_missing ./conf/active.json    "$CONF_DIR/mihomo/active.json"
+init_if_missing ./conf/config.yaml    "$CONF_DIR/mihomo/config.yaml"
+# 默认 profile：只在 profiles/ 目录为空时铺设
+if [ -z "$(ls -A "$CONF_DIR/mihomo/profiles" 2>/dev/null)" ] && [ -d ./conf/profiles ]; then
+	cp -R ./conf/profiles/. "$CONF_DIR/mihomo/profiles/"
+	log_info "  初始化默认 profile"
+fi
+log_success "v2 配置就绪"
+
+# 统一设置文件权限
+log_step "设置文件权限..."
 chown -R root:www "$CONF_DIR/mihomo" 2>/dev/null || true
 chmod 750 "$CONF_DIR/mihomo"
 chmod 750 "$CONF_DIR/mihomo/profiles"
 chmod 750 "$CONF_DIR/mihomo/backups"
-log_success "目录结构就绪"
-
-# 检测是否需要迁移
-if [ ! -f "$CONF_DIR/mihomo/base.yaml" ] && [ -f "$CONF_DIR/mihomo/config.yaml" ]; then
-	log_step "检测到旧版配置，执行 v2 迁移..."
-	if [ -f ./migrate.sh ]; then
-		bash ./migrate.sh
-		MIGRATE_RC=$?
-	else
-		log_warn "migrate.sh 未找到，跳过迁移"
-		MIGRATE_RC=0
-	fi
-
-	if [ "$MIGRATE_RC" != "0" ]; then
-		log_error "配置迁移失败！保留旧文件不动，拒绝注册新 UI。"
-		log_error "请手动解决后重新运行 install.sh，或从 Backup 页面恢复。"
-		rm -f "$MENU_DIR/Magic/Menu/Menu.xml"
-		rm -f "$WWW_DIR/mihomo_dashboard.php" "$WWW_DIR/mihomo_configuration.php"
-		rm -f "$WWW_DIR/mihomo_backup.php" "$WWW_DIR/mihomo_subscriptions.php"
-		rm -f "$WWW_DIR/includes/mihomo_lib.inc.php"
-			rm -f "$WWW_DIR/status_mihomo_traffic.php" "$WWW_DIR/status_mihomo_health.php"
-			rm -f "$WWW_DIR/status_mihomo_update.php"
-			rm -f "$CONF_DIR/mihomo/sub/sub_cron.sh"
-			rm -f "$CONF_DIR/mihomo/sub/update_core.sh" "$CONF_DIR/mihomo/sub/update_geoip.sh"
-			rm -f "$CONF_DIR/mihomo/sub/update_ui.sh" "$CONF_DIR/mihomo/sub/mihomo_health_check.sh"
-		exit 1
-	fi
-	log_success "迁移完成"
-elif [ -f "$CONF_DIR/mihomo/base.yaml" ]; then
-	log_warn "检测到 base.yaml，已迁移，跳过"
-else
-	log_warn "新安装，创建默认配置..."
-	if [ -f "$CONF_DIR/mihomo/config.yaml" ]; then
-		cp "$CONF_DIR/mihomo/config.yaml" "$CONF_DIR/mihomo/base.yaml"
-		log_info "已从 config.yaml 创建默认 base.yaml"
-	fi
-	if [ ! -f "$CONF_DIR/mihomo/override.yaml" ]; then
-		cat > "$CONF_DIR/mihomo/override.yaml" <<'OVRDEOF'
-# 用户覆写片段 — 订阅刷新不会覆盖此文件内容。
-OVRDEOF
-	fi
-	if [ ! -f "$CONF_DIR/mihomo/subs.json" ]; then
-		echo '[]' > "$CONF_DIR/mihomo/subs.json"
-	fi
-	if [ ! -f "$CONF_DIR/mihomo/active.json" ]; then
-		echo '{"profile": "legacy"}' > "$CONF_DIR/mihomo/active.json"
-	fi
-fi
-
-# 统一设置文件权限
-log_step "设置文件权限..."
 chmod 640 "$CONF_DIR/mihomo/base.yaml" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/override.yaml" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/subs.json" 2>/dev/null || true

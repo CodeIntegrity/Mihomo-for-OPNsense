@@ -1,0 +1,16 @@
+# 用户覆写片段 — 订阅刷新不会覆盖此文件内容。
+#
+# 约定 key（按位置插入）：
+#   prepend-rules        — 插入 rules 列表头部
+#   append-rules         — 追加到 rules 列表尾部
+#   append-proxies       — 追加私有节点到 proxies 列表末尾
+#   prepend-proxy-groups — 插入 proxy-groups 列表头部
+#   append-proxy-groups  — 追加到 proxy-groups 列表尾部
+#
+# 其余顶层 key 将深度合并覆盖 base.yaml。
+#
+# 示例：
+# append-rules:
+#   - DOMAIN-SUFFIX,example.com,DIRECT
+# append-proxies:
+#   - {name: my-vps, type: trojan, server: 1.2.3.4, port: 443, password: xxx}
