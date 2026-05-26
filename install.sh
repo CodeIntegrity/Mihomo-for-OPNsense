@@ -96,6 +96,13 @@ fi
 log_step "复制文件并部署组件..."
 log_info "生成菜单..."
 log_info "生成服务..."
+# 预检：bin/mihomo 必须是真实的 FreeBSD ELF 二进制，而非占位符文本
+if ! file -b ./bin/mihomo 2>/dev/null | grep -qE 'ELF.*executable|FreeBSD'; then
+	log_error "bin/mihomo 不是有效的 FreeBSD 可执行文件（疑似占位符或损坏）"
+	log_error "请从 https://github.com/Vincent-Loeng/clash-meta/releases 下载"
+	log_error "freebsd-amd64 版本，解压后替换 bin/mihomo 再重新安装"
+	exit 1
+fi
 log_info "添加权限..."
 run_or_die chmod +x ./bin/* ./rc.d/*
 # migrate.sh 和 conf/sub/*.sh 可能不存在（非首次安装），失败不终止
