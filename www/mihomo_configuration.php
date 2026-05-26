@@ -219,18 +219,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- Update Actions ---
     if (in_array($action, ['check_core', 'check_geoip', 'check_ui', 'update_core', 'update_geoip', 'update_ui'])) {
         $resource = str_replace(['check_', 'update_'], '', $action);
-        $resource = str_replace('geoip', 'geoip', $resource);
-        $resource = str_replace('core', 'core', $resource);
-        $resource = str_replace('ui', 'ui', $resource);
-
-        $script = '';
-        if ($resource === 'core') $script = '/usr/local/etc/mihomo/sub/update_core.sh';
-        if ($resource === 'geoip') $script = '/usr/local/etc/mihomo/sub/update_geoip.sh';
-        if ($resource === 'ui') $script = '/usr/local/etc/mihomo/sub/update_ui.sh';
-
         $mode = strpos($action, 'check_') === 0 ? 'check' : 'update';
-        if ($script) {
-            mihomoExecBackground("bash $script $mode");
+
+        $cmd = '';
+        if ($resource === 'core' || $resource === 'geoip') {
+            $cmd = '/usr/local/sbin/configctl mihomo update-' . $resource . ' ' . escapeshellarg($mode);
+        } elseif ($resource === 'ui') {
+            $variant = preg_replace('/[^a-z]/', '', $_POST['ui_variant'] ?? 'metacubexd');
+            if (!in_array($variant, ['metacubexd', 'zashboard', 'yacd'], true)) {
+                $variant = 'metacubexd';
+            }
+            $cmd = '/usr/local/sbin/configctl mihomo update-ui ' . escapeshellarg($mode) . ' ' . escapeshellarg($variant);
+        }
+
+        if ($cmd) {
+            // Reset state file so the UI sees fresh progress immediately
+            @file_put_contents("/tmp/mihomo-update-{$resource}.json",
+                json_encode(['state' => 'checking', 'progress' => 1, 'message' => 'Starting...']));
+            mihomoExecBackground($cmd);
             $message = $mode === 'check'
                 ? sprintf(dgettext('mihomo', 'Checking %s updates...'), $resource)
                 : sprintf(dgettext('mihomo', '%s update started. Do not leave this page.'), $resource);
@@ -788,21 +794,21 @@ dns:
 <!-- Dashboard UI -->
 <div class="mihomo-update-card">
 <h4><i class="fa fa-desktop"></i> <?= dgettext('mihomo', 'Dashboard UI') ?></h4>
-<p>
-    <span><?= dgettext('mihomo', 'UI Variant') ?>:</span>
-    <select id="ui-variant" class="form-control" style="width:auto;display:inline;">
-        <option value="metacubexd">metacubexd</option>
-        <option value="zashboard">zashboard</option>
-        <option value="yacd">yacd</option>
-    </select>
-</p>
-<div class="mihomo-actions">
-    <form method="post" style="display:inline;">
-        <input type="hidden" name="_tab" value="updates">
+<form method="post" style="display:inline;">
+    <input type="hidden" name="_tab" value="updates">
+    <p>
+        <span><?= dgettext('mihomo', 'UI Variant') ?>:</span>
+        <select name="ui_variant" id="ui-variant" class="form-control" style="width:auto;display:inline;">
+            <option value="metacubexd">metacubexd</option>
+            <option value="zashboard">zashboard</option>
+            <option value="yacd">yacd</option>
+        </select>
+    </p>
+    <div class="mihomo-actions">
         <button type="submit" name="action" value="check_ui" class="btn btn-default"><i class="fa fa-refresh"></i> <?= dgettext('mihomo', 'Check') ?></button>
         <button type="submit" name="action" value="update_ui" class="btn btn-warning" id="btn-update-ui"><i class="fa fa-download"></i> <?= dgettext('mihomo', 'Update') ?></button>
-    </form>
-</div>
+    </div>
+</form>
 <div id="ui-update-progress" style="margin-top:8px;"></div>
 </div>
 </div>

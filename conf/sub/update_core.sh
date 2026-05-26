@@ -45,14 +45,14 @@ if [ -n "$MIRROR" ]; then
     API_URL="${MIRROR}${API_URL}"
 fi
 
-AUTH_HEADER=""
-[ -n "$TOKEN" ] && AUTH_HEADER="Authorization: Bearer ${TOKEN}"
+AUTH_ARGS=()
+[ -n "$TOKEN" ] && AUTH_ARGS=(-H "Authorization: Bearer ${TOKEN}")
 
 # Check cache (1h TTL)
 if [ -f "$CACHE_FILE" ] && [ "$MODE" = "check" ]; then
     CACHE_AGE=$(($(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0)))
     if [ "$CACHE_AGE" -lt 3600 ]; then
-        LATEST_VER=$(jq -r '.tag_name' "$CACHE_FILE" 2>/dev/null || echo "")
+        LATEST_VER=$(jq -r '.tag_name' "$CACHE_FILE" 2>/dev/null | sed 's/^v//' || echo "")
         echo "Latest (cached): $LATEST_VER"
         update_state "done" 100 "Latest: $LATEST_VER (current: $CURRENT_VER)"
         exit 0
@@ -60,7 +60,7 @@ if [ -f "$CACHE_FILE" ] && [ "$MODE" = "check" ]; then
 fi
 
 update_state "checking" 10 "Checking GitHub for latest release..."
-RELEASE=$(curl -sf --max-time 10 -H "$AUTH_HEADER" -H "Accept: application/vnd.github+json" "$API_URL" 2>/dev/null || echo "")
+RELEASE=$(curl -sf --max-time 10 "${AUTH_ARGS[@]}" -H "Accept: application/vnd.github+json" "$API_URL" 2>/dev/null || echo "")
 
 if [ -z "$RELEASE" ]; then
     update_state "failed" 0 "Failed to fetch release info from GitHub"
@@ -69,7 +69,7 @@ fi
 
 echo "$RELEASE" > "$CACHE_FILE"
 
-LATEST_VER=$(echo "$RELEASE" | jq -r '.tag_name' 2>/dev/null)
+LATEST_VER=$(echo "$RELEASE" | jq -r '.tag_name' 2>/dev/null | sed 's/^v//')
 echo "Latest version: $LATEST_VER"
 
 if [ "$MODE" = "check" ]; then

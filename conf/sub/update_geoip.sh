@@ -84,8 +84,15 @@ chown root:www "$MMDB_PATH" 2>/dev/null || true
 CONTROLLER=$(awk '/^external-controller:/ {print $2}' /usr/local/etc/mihomo/base.yaml 2>/dev/null | tr -d "'\"" || echo "")
 SECRET=$(awk '/^secret:/ {print $2}' /usr/local/etc/mihomo/base.yaml 2>/dev/null | tr -d "'\"" || echo "")
 
-if [ -n "$CONTROLLER" ] && [ -n "$SECRET" ]; then
-    curl -sf --max-time 5 -X PUT -H "Authorization: Bearer $SECRET" \
+# Normalize bind-all/empty host to localhost for the API call
+case "$CONTROLLER" in
+    :*|0.0.0.0:*) CONTROLLER="127.0.0.1:${CONTROLLER##*:}" ;;
+esac
+
+if [ -n "$CONTROLLER" ]; then
+    AUTH_ARGS=()
+    [ -n "$SECRET" ] && AUTH_ARGS=(-H "Authorization: Bearer $SECRET")
+    curl -sf --max-time 5 -X PUT "${AUTH_ARGS[@]}" \
         "http://${CONTROLLER}/configs/geo" >/dev/null 2>&1 && \
         update_state "done" 100 "GeoIP updated successfully" || \
         update_state "done" 100 "GeoIP updated (reload via restart needed)"

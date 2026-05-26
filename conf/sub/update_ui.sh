@@ -8,18 +8,16 @@
 set -e
 
 MODE="${1:-check}"
+UI_VARIANT="${2:-metacubexd}"
 STATE_FILE="/tmp/mihomo-update-ui.json"
 UI_DIR="/usr/local/etc/mihomo/ui"
 BACKUP_DIR="/usr/local/etc/mihomo/backups"
-
-# Default UI variant
-UI_VARIANT="metacubexd"
 
 case "$UI_VARIANT" in
     metacubexd) REPO="MetaCubeX/metacubexd" ;;
     zashboard)  REPO="Zephyruso/zashboard" ;;
     yacd)       REPO="haishanh/yacd" ;;
-    *)          REPO="MetaCubeX/metacubexd" ;;
+    *)          UI_VARIANT="metacubexd"; REPO="MetaCubeX/metacubexd" ;;
 esac
 
 update_state() {
