@@ -80,7 +80,7 @@ class OverrideController extends ApiControllerBase
                     . 'print("OK" if d is None or isinstance(d, dict) else "ERR not a mapping")'
                 )
             );
-            $out = trim((string)@shell_exec($cmd));
+            $out = trim($this->execRead($cmd));
             if ($out === 'OK') {
                 return ['status' => 'ok', 'message' => 'YAML is valid'];
             }

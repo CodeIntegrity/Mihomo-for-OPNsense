@@ -50,8 +50,7 @@ class BackupController extends ApiControllerBase
                 escapeshellarg($encFile)
             );
             putenv('MIHOMO_BACKUP_PASS=' . $password);
-            $out = []; $rc = 0;
-            exec($cmd, $out, $rc);
+            list($out, $rc) = $this->safeExec($cmd);
             putenv('MIHOMO_BACKUP_PASS=');
             if ($rc !== 0) {
                 @unlink($encFile);
@@ -109,8 +108,7 @@ class BackupController extends ApiControllerBase
                     escapeshellarg($upload),
                     escapeshellarg($tarFile)
                 );
-                $out = []; $rc = 0;
-                exec($cmd, $out, $rc);
+                list($out, $rc) = $this->safeExec($cmd);
                 putenv('MIHOMO_BACKUP_PASS=');
                 if ($rc !== 0) {
                     return ['status' => 'failed', 'message' => 'decryption failed (wrong password?)'];
@@ -129,8 +127,7 @@ class BackupController extends ApiControllerBase
             $stage = '/tmp/mihomo-restore-' . posix_getpid();
             @mkdir($stage, 0750, true);
             $cmd = sprintf('tar -xzf %s -C %s 2>&1', escapeshellarg($tarFile), escapeshellarg($stage));
-            $out = []; $rc = 0;
-            exec($cmd, $out, $rc);
+            list($out, $rc) = $this->safeExec($cmd);
             if ($rc !== 0) {
                 $this->recursiveRm($stage);
                 return ['status' => 'failed', 'message' => 'tar extract failed: ' . implode("\n", $out)];

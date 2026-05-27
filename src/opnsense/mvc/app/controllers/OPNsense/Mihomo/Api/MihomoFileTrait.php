@@ -190,6 +190,41 @@ trait MihomoFileTrait
     }
 
     /**
+     * Execute a command and return [stdout_lines, exit_code].
+     *
+     * Tries the native exec() first; falls back to proc_open when exec is
+     * disabled via php.ini (disable_functions).
+     */
+    protected function safeExec($cmd)
+    {
+        if (function_exists('exec')) {
+            $out = []; $rc = 0;
+            @exec($cmd, $out, $rc);
+            return [$out, $rc];
+        }
+        if (function_exists('proc_open')) {
+            $proc = @proc_open($cmd, [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ], $pipes);
+            if (is_resource($proc)) {
+                fclose($pipes[0]);
+                $stdout = stream_get_contents($pipes[1]);
+                $stderr = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                $rc = proc_close($proc);
+                $out = array_filter(explode("\n", $stdout . $stderr), function ($l) {
+                    return $l !== '';
+                });
+                return [array_values($out), $rc];
+            }
+        }
+        throw new \RuntimeException('neither exec() nor proc_open() is available');
+    }
+
+    /**
      * Invoke a configd action: `configctl mihomo <action> [args...]`.
      *
      * Returns the raw configd response string (caller parses).
@@ -350,8 +385,7 @@ trait MihomoFileTrait
             escapeshellarg($file),
             escapeshellarg($this->mihomoPath())
         );
-        $out = []; $rc = 0;
-        exec($cmd, $out, $rc);
+        list($out, $rc) = $this->safeExec($cmd);
         if ($rc !== 0) {
             @unlink($file);
             throw new \RuntimeException('tar failed: ' . implode("\n", $out));

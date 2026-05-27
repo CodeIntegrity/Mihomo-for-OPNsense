@@ -6,13 +6,16 @@
  *
  */
 
+// Register the mihomo gettext domain so translations under
+// /usr/local/share/locale/zh_CN/LC_MESSAGES/mihomo.mo are found.
+// Must be at file scope — the OPNsense bootstrap loads this file on every
+// request, and dgettext('mihomo', ...) needs this path registered beforehand.
+bindtextdomain('mihomo', '/usr/local/share/locale');
+bind_textdomain_codeset('mihomo', 'UTF-8');
+
 function mihomo_services()
 {
     global $config;
-
-    // Bind the mihomo gettext domain so translations under
-    // /usr/local/share/locale/zh_CN/LC_MESSAGES/mihomo.mo are found.
-    bindtextdomain('mihomo', '/usr/local/share/locale');
 
     $services = array();
 
