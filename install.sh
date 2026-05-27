@@ -190,13 +190,6 @@ install_pkg_if_missing bash
 install_pkg_if_missing jq
 install_pkg_if_missing curl
 
-# 启动Tun接口
-log_step "启动 mihomo..."
-if service mihomo restart > /dev/null 2>&1; then
-  log_success "mihomo 重启完成"
-else
-  log_error "mihomo 重启失败"
-fi
 echo ""
 
 # 备份配置文件

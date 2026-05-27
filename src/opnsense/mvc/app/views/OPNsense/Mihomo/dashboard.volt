@@ -48,7 +48,9 @@
         text-transform: uppercase;
     }
     .mihomo-log {
+        display: block;
         width: 100%;
+        max-width: 100%;
         height: 220px;
         font-family: monospace;
         font-size: 12px;
@@ -56,6 +58,7 @@
         color: #d4d4d4;
         border: 1px solid #333;
         resize: vertical;
+        box-sizing: border-box;
     }
     .mihomo-banner {
         margin-bottom: 12px;

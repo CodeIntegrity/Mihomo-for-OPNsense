@@ -170,10 +170,19 @@ trait MihomoFileTrait
      */
     protected function configdRun($action, array $args = [])
     {
+        // Validate action name — must match configd [section] label (alphanum + dash).
+        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $action)) {
+            throw new \InvalidArgumentException("invalid configd action: {$action}");
+        }
         $backend = new Backend();
-        $cmd = 'mihomo ' . escapeshellarg($action);
+        $cmd = 'mihomo ' . $action;
         foreach ($args as $a) {
-            $cmd .= ' ' . escapeshellarg((string)$a);
+            $a = (string)$a;
+            // Args go through configd regex parameter validation — validate safe chars only.
+            if (!preg_match('/^[a-zA-Z0-9_.:\/,\-]+$/', $a)) {
+                throw new \InvalidArgumentException("invalid configd arg: {$a}");
+            }
+            $cmd .= ' ' . $a;
         }
         $resp = $backend->configdRun($cmd);
         if ($resp === false) {

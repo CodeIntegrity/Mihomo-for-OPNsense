@@ -11,7 +11,9 @@
 <style>
     .mihomo-tab-content { padding-top: 14px; }
     .mihomo-yaml-edit {
+        display: block;
         width: 100%;
+        max-width: 100%;
         height: 420px;
         font-family: monospace;
         font-size: 12px;
@@ -19,9 +21,12 @@
         color: #d4d4d4;
         border: 1px solid #333;
         resize: vertical;
+        box-sizing: border-box;
     }
     .mihomo-log {
+        display: block;
         width: 100%;
+        max-width: 100%;
         height: 360px;
         font-family: monospace;
         font-size: 12px;
@@ -29,6 +34,7 @@
         color: #d4d4d4;
         border: 1px solid #333;
         resize: vertical;
+        box-sizing: border-box;
     }
     .mihomo-update-card {
         border: 1px solid #e5e5e5;
@@ -374,6 +380,11 @@ prepend-proxy-groups:
 <script>
 $(function() {
     'use strict';
+
+    // Hide duplicate "Full help" toggles (one per form block); keep only the first.
+    $('.mihomo-tab-content .act_toggle_full_help').each(function(i) {
+        if (i > 0) $(this).closest('.checkbox').hide();
+    });
 
     // ----- Hash routing — preserve current tab across reloads -----
     var hash = window.location.hash || '#settings';
