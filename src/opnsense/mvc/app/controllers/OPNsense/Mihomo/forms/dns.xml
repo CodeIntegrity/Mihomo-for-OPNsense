@@ -1,0 +1,68 @@
+<form>
+    <field>
+        <id>dns.enable</id>
+        <label>Enable</label>
+        <type>checkbox</type>
+        <help>Enable Mihomo's built-in DNS resolver.</help>
+    </field>
+    <field>
+        <id>dns.listen</id>
+        <label>Listen</label>
+        <type>text</type>
+        <help>DNS listen address. Default: 0.0.0.0:53 (Unbound is moved to 5355 by install.sh).</help>
+    </field>
+    <field>
+        <id>dns.ipv6</id>
+        <label>IPv6</label>
+        <type>checkbox</type>
+        <help>Resolve AAAA records.</help>
+    </field>
+    <field>
+        <id>dns.enhanced_mode</id>
+        <label>Enhanced Mode</label>
+        <type>dropdown</type>
+        <help>fake-ip = synthesize answers for sniffer-based routing (recommended); redir-host = redirect; normal = pass through.</help>
+    </field>
+    <field>
+        <id>dns.fake_ip_range</id>
+        <label>Fake IP Range</label>
+        <type>text</type>
+        <help>CIDR used to synthesize fake answers.</help>
+    </field>
+    <field>
+        <id>dns.default_nameserver</id>
+        <label>Default Nameserver</label>
+        <type>text</type>
+        <help>Comma-separated. Default: 127.0.0.1:5355 (the relocated Unbound).</help>
+    </field>
+    <field>
+        <id>dns.nameserver</id>
+        <label>Nameserver</label>
+        <type>text</type>
+        <help>Comma-separated list of upstream resolvers used for general queries.</help>
+    </field>
+    <field>
+        <id>dns.fallback</id>
+        <label>Fallback</label>
+        <type>text</type>
+        <help>Comma-separated list of resolvers used as fallback for international domains.</help>
+    </field>
+    <field>
+        <id>dns.fake_ip_filter</id>
+        <label>Fake IP Filter</label>
+        <type>text</type>
+        <help>Comma-separated domain patterns excluded from fake-ip handling.</help>
+    </field>
+    <field>
+        <id>dns.use_hosts</id>
+        <label>Use Hosts</label>
+        <type>checkbox</type>
+        <help>Honor the Hosts table below.</help>
+    </field>
+    <field>
+        <id>dns.hosts</id>
+        <label>Hosts</label>
+        <type>text</type>
+        <help>Static host entries (format: domain=ip; one per line). Optional.</help>
+    </field>
+</form>

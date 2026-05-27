@@ -1,0 +1,286 @@
+<model>
+    <mount>//OPNsense/Mihomo/mihomo</mount>
+    <description>Mihomo proxy integration for OPNsense — Settings (base.yaml render source) + Subscription list</description>
+    <version>1.0.0</version>
+    <items>
+        <!--
+            Group A — General (mihomo top-level keys)
+            Field names use snake_case; reconfigure.py maps them to YAML hyphen keys.
+        -->
+        <general>
+            <port type="PortField">
+                <default>7890</default>
+                <ValidationMessage>HTTP port must be 0-65535 (0 disables).</ValidationMessage>
+            </port>
+            <socks_port type="PortField">
+                <default>7891</default>
+                <ValidationMessage>SOCKS port must be 0-65535 (0 disables).</ValidationMessage>
+            </socks_port>
+            <mixed_port type="PortField">
+                <default>0</default>
+            </mixed_port>
+            <allow_lan type="BooleanField">
+                <default>1</default>
+            </allow_lan>
+            <bind_address type="TextField">
+                <default>*</default>
+                <Mask>/^[^\s]+$/u</Mask>
+            </bind_address>
+            <mode type="OptionField">
+                <default>rule</default>
+                <OptionValues>
+                    <rule>rule</rule>
+                    <global>global</global>
+                    <direct>direct</direct>
+                </OptionValues>
+            </mode>
+            <log_level type="OptionField">
+                <default>warning</default>
+                <OptionValues>
+                    <silent>silent</silent>
+                    <error>error</error>
+                    <warning>warning</warning>
+                    <info>info</info>
+                    <debug>debug</debug>
+                </OptionValues>
+            </log_level>
+            <ipv6 type="BooleanField">
+                <default>1</default>
+            </ipv6>
+            <tcp_concurrent type="BooleanField">
+                <default>1</default>
+            </tcp_concurrent>
+            <find_process_mode type="OptionField">
+                <default>off</default>
+                <OptionValues>
+                    <off>off</off>
+                    <strict>strict (may fail on FreeBSD)</strict>
+                    <always>always</always>
+                </OptionValues>
+            </find_process_mode>
+            <global_client_fingerprint type="OptionField">
+                <default>chrome</default>
+                <OptionValues>
+                    <chrome>chrome</chrome>
+                    <firefox>firefox</firefox>
+                    <safari>safari</safari>
+                    <ios>ios</ios>
+                    <random>random</random>
+                </OptionValues>
+            </global_client_fingerprint>
+            <unified_delay type="BooleanField">
+                <default>0</default>
+            </unified_delay>
+            <interface_name type="TextField">
+                <default></default>
+                <Mask>/^[a-zA-Z0-9_.-]*$/u</Mask>
+            </interface_name>
+        </general>
+
+        <!-- Group B — External Controller -->
+        <controller>
+            <external_controller type="TextField">
+                <default>0.0.0.0:9090</default>
+                <Required>Y</Required>
+                <Mask>/^[a-zA-Z0-9.:\[\]_-]+$/u</Mask>
+            </external_controller>
+            <secret type="TextField">
+                <default></default>
+            </secret>
+            <external_ui type="TextField">
+                <default>/usr/local/etc/mihomo/ui</default>
+            </external_ui>
+        </controller>
+
+        <!-- Group C — TUN -->
+        <tun>
+            <enable type="BooleanField">
+                <default>1</default>
+            </enable>
+            <stack type="OptionField">
+                <default>gvisor</default>
+                <OptionValues>
+                    <system>system</system>
+                    <gvisor>gvisor</gvisor>
+                    <mixed>mixed</mixed>
+                </OptionValues>
+            </stack>
+            <device type="TextField">
+                <default>tun_3000</default>
+                <Required>Y</Required>
+                <Mask>/^[a-zA-Z0-9_]+$/u</Mask>
+            </device>
+            <mtu type="IntegerField">
+                <default>9000</default>
+                <MinimumValue>576</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+            </mtu>
+            <auto_route type="BooleanField">
+                <default>1</default>
+            </auto_route>
+            <strict_route type="BooleanField">
+                <default>1</default>
+            </strict_route>
+            <auto_detect_interface type="BooleanField">
+                <default>1</default>
+            </auto_detect_interface>
+            <dns_hijack type="TextField">
+                <default>any:53,tcp://any:53</default>
+            </dns_hijack>
+        </tun>
+
+        <!-- Group D — DNS -->
+        <dns>
+            <enable type="BooleanField">
+                <default>1</default>
+            </enable>
+            <listen type="TextField">
+                <default>0.0.0.0:53</default>
+            </listen>
+            <ipv6 type="BooleanField">
+                <default>1</default>
+            </ipv6>
+            <enhanced_mode type="OptionField">
+                <default>fake-ip</default>
+                <OptionValues>
+                    <fake-ip>fake-ip</fake-ip>
+                    <redir-host>redir-host</redir-host>
+                    <normal>normal</normal>
+                </OptionValues>
+            </enhanced_mode>
+            <fake_ip_range type="TextField">
+                <default>198.18.0.1/16</default>
+            </fake_ip_range>
+            <default_nameserver type="TextField">
+                <default>127.0.0.1:5355</default>
+            </default_nameserver>
+            <nameserver type="TextField">
+                <default>https://doh.pub/dns-query,https://dns.alidns.com/dns-query</default>
+            </nameserver>
+            <fallback type="TextField">
+                <default></default>
+            </fallback>
+            <fake_ip_filter type="TextField">
+                <default>+.lan,+.local,+.arpa</default>
+            </fake_ip_filter>
+            <use_hosts type="BooleanField">
+                <default>1</default>
+            </use_hosts>
+            <hosts type="TextField">
+                <default></default>
+            </hosts>
+        </dns>
+
+        <!-- Group E — Sniffer -->
+        <sniffer>
+            <enable type="BooleanField">
+                <default>1</default>
+            </enable>
+            <force_dns_mapping type="BooleanField">
+                <default>1</default>
+            </force_dns_mapping>
+            <parse_pure_ip type="BooleanField">
+                <default>1</default>
+            </parse_pure_ip>
+            <override_destination type="BooleanField">
+                <default>1</default>
+            </override_destination>
+            <sniff_http_ports type="TextField">
+                <default>80,8080-8880</default>
+            </sniff_http_ports>
+            <sniff_tls_ports type="TextField">
+                <default>443,8443</default>
+            </sniff_tls_ports>
+            <sniff_quic_ports type="TextField">
+                <default>443,8443</default>
+            </sniff_quic_ports>
+            <skip_domains type="TextField">
+                <default>+.push.apple.com</default>
+            </skip_domains>
+        </sniffer>
+
+        <!-- Group F — Auto Update (project-specific, not native mihomo) -->
+        <update>
+            <github_mirror type="TextField">
+                <default></default>
+            </github_mirror>
+            <github_token type="TextField">
+                <default></default>
+            </github_token>
+            <auto_update_geoip type="BooleanField">
+                <default>0</default>
+            </auto_update_geoip>
+            <auto_update_ui type="BooleanField">
+                <default>0</default>
+            </auto_update_ui>
+            <auto_update_core type="BooleanField">
+                <default>0</default>
+            </auto_update_core>
+            <health_check_url type="UrlField">
+                <default>https://www.gstatic.com/generate_204</default>
+            </health_check_url>
+            <health_check_timeout type="IntegerField">
+                <default>3000</default>
+                <MinimumValue>500</MinimumValue>
+                <MaximumValue>60000</MaximumValue>
+            </health_check_timeout>
+            <auto_backup_on_override type="BooleanField">
+                <default>0</default>
+            </auto_backup_on_override>
+            <auto_backup_on_profile_activate type="BooleanField">
+                <default>0</default>
+            </auto_backup_on_profile_activate>
+        </update>
+
+        <!-- Subscription list (CRUD via ApiMutableModelControllerBase) -->
+        <subscriptions>
+            <subscription type="ArrayField">
+                <enabled type="BooleanField">
+                    <default>1</default>
+                </enabled>
+                <name type="TextField">
+                    <Required>Y</Required>
+                    <Mask>/^[a-zA-Z0-9_-]+$/u</Mask>
+                    <ValidationMessage>Name allows letters, digits, underscore and dash only.</ValidationMessage>
+                </name>
+                <url type="UrlField">
+                    <Required>Y</Required>
+                </url>
+                <user_agent type="TextField">
+                    <default>clash-verge/v1.7.0</default>
+                </user_agent>
+                <interval type="IntegerField">
+                    <default>6</default>
+                    <MinimumValue>0</MinimumValue>
+                    <MaximumValue>168</MaximumValue>
+                    <ValidationMessage>Interval (hours), 0 = off.</ValidationMessage>
+                </interval>
+                <include_keyword type="TextField">
+                    <default></default>
+                </include_keyword>
+                <exclude_keyword type="TextField">
+                    <default>剩余,流量,过期,官网,套餐</default>
+                </exclude_keyword>
+                <last_update type="TextField">
+                    <default></default>
+                </last_update>
+                <last_status type="OptionField">
+                    <default>idle</default>
+                    <OptionValues>
+                        <idle>Idle</idle>
+                        <updating>Updating</updating>
+                        <done>Done</done>
+                        <failed>Failed</failed>
+                    </OptionValues>
+                </last_status>
+            </subscription>
+        </subscriptions>
+
+        <!-- Active profile pointer (mirrors active.json) -->
+        <state>
+            <active_profile type="TextField">
+                <default>legacy</default>
+            </active_profile>
+        </state>
+    </items>
+</model>

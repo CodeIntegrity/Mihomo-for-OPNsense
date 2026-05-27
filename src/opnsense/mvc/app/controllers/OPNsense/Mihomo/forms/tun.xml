@@ -1,0 +1,50 @@
+<form>
+    <field>
+        <id>tun.enable</id>
+        <label>Enable TUN</label>
+        <type>checkbox</type>
+        <help>Master switch for transparent proxy. Disabling will stop Mihomo from intercepting traffic.</help>
+    </field>
+    <field>
+        <id>tun.stack</id>
+        <label>Stack</label>
+        <type>dropdown</type>
+        <help>TUN userspace network stack.</help>
+    </field>
+    <field>
+        <id>tun.device</id>
+        <label>Device Name</label>
+        <type>text</type>
+        <help>TUN interface name. Must match the firewall interface created by install.sh.</help>
+    </field>
+    <field>
+        <id>tun.mtu</id>
+        <label>MTU</label>
+        <type>text</type>
+        <help>TUN interface MTU. Default: 9000.</help>
+    </field>
+    <field>
+        <id>tun.auto_route</id>
+        <label>Auto Route</label>
+        <type>checkbox</type>
+        <help>Automatically configure routes pointing to the TUN device.</help>
+    </field>
+    <field>
+        <id>tun.strict_route</id>
+        <label>Strict Route</label>
+        <type>checkbox</type>
+        <help>Strict route enforcement.</help>
+    </field>
+    <field>
+        <id>tun.auto_detect_interface</id>
+        <label>Auto Detect Interface</label>
+        <type>checkbox</type>
+        <help>Auto detect the outbound interface for direct connections.</help>
+    </field>
+    <field>
+        <id>tun.dns_hijack</id>
+        <label>DNS Hijack</label>
+        <type>text</type>
+        <help>Comma-separated list of DNS hijack rules. Default: any:53,tcp://any:53.</help>
+    </field>
+</form>

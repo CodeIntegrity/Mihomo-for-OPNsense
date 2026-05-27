@@ -1,0 +1,20 @@
+<form>
+    <field>
+        <id>controller.external_controller</id>
+        <label>External Controller</label>
+        <type>text</type>
+        <help>RESTful API listen address. Default: 0.0.0.0:9090.</help>
+    </field>
+    <field>
+        <id>controller.secret</id>
+        <label>API Secret</label>
+        <type>password</type>
+        <help>Authentication secret for the RESTful API. Leave blank to disable auth (NOT recommended for non-localhost binds).</help>
+    </field>
+    <field>
+        <id>controller.external_ui</id>
+        <label>External UI Path</label>
+        <type>text</type>
+        <help>Directory served as the Mihomo Dashboard UI. Managed by Updates Tab — edit with care.</help>
+    </field>
+</form>

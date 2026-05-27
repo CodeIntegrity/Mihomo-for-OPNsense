@@ -1,0 +1,26 @@
+<acl>
+    <page-mihomo-dashboard>
+        <name>Mihomo: Dashboard</name>
+        <patterns>
+            <pattern>ui/mihomo/dashboard*</pattern>
+            <pattern>api/mihomo/service/*</pattern>
+            <pattern>api/mihomo/dashboard/*</pattern>
+            <pattern>api/mihomo/profiles/active*</pattern>
+            <pattern>api/mihomo/profiles/activate/*</pattern>
+            <pattern>api/mihomo/subscriptions/refresh/*</pattern>
+        </patterns>
+    </page-mihomo-dashboard>
+    <page-mihomo-configuration>
+        <name>Mihomo: Configuration</name>
+        <patterns>
+            <pattern>ui/mihomo/configuration*</pattern>
+            <pattern>api/mihomo/settings/*</pattern>
+            <pattern>api/mihomo/subscriptions/*</pattern>
+            <pattern>api/mihomo/override/*</pattern>
+            <pattern>api/mihomo/profiles/*</pattern>
+            <pattern>api/mihomo/backup/*</pattern>
+            <pattern>api/mihomo/update/*</pattern>
+            <pattern>api/mihomo/service/reconfigure*</pattern>
+        </patterns>
+    </page-mihomo-configuration>
+</acl>

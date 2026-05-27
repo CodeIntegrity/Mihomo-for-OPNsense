@@ -1,0 +1,80 @@
+<form>
+    <field>
+        <id>general.port</id>
+        <label>HTTP Port</label>
+        <type>text</type>
+        <help>HTTP proxy port (0 disables). Default: 7890.</help>
+    </field>
+    <field>
+        <id>general.socks_port</id>
+        <label>SOCKS Port</label>
+        <type>text</type>
+        <help>SOCKS5 proxy port (0 disables). Default: 7891.</help>
+    </field>
+    <field>
+        <id>general.mixed_port</id>
+        <label>Mixed Port</label>
+        <type>text</type>
+        <help>HTTP + SOCKS mixed port (0 disables).</help>
+    </field>
+    <field>
+        <id>general.allow_lan</id>
+        <label>Allow LAN</label>
+        <type>checkbox</type>
+        <help>Accept connections from LAN clients.</help>
+    </field>
+    <field>
+        <id>general.bind_address</id>
+        <label>Bind Address</label>
+        <type>text</type>
+        <help>Bind address for HTTP/SOCKS listeners. Use * for all interfaces.</help>
+    </field>
+    <field>
+        <id>general.mode</id>
+        <label>Mode</label>
+        <type>dropdown</type>
+        <help>Proxy routing mode (rule = via rules, global = all via selected proxy, direct = no proxy).</help>
+    </field>
+    <field>
+        <id>general.log_level</id>
+        <label>Log Level</label>
+        <type>dropdown</type>
+        <help>Mihomo log verbosity.</help>
+    </field>
+    <field>
+        <id>general.ipv6</id>
+        <label>IPv6</label>
+        <type>checkbox</type>
+        <help>Enable IPv6 traffic handling.</help>
+    </field>
+    <field>
+        <id>general.tcp_concurrent</id>
+        <label>TCP Concurrent</label>
+        <type>checkbox</type>
+        <help>Race multiple IPs concurrently to reduce TCP connect latency.</help>
+    </field>
+    <field>
+        <id>general.find_process_mode</id>
+        <label>Find Process Mode</label>
+        <type>dropdown</type>
+        <help>Process matching for PROCESS-NAME rules. Note: strict may not work on FreeBSD.</help>
+    </field>
+    <field>
+        <id>general.global_client_fingerprint</id>
+        <label>Global Client Fingerprint</label>
+        <type>dropdown</type>
+        <help>uTLS fingerprint applied to outgoing TLS handshakes.</help>
+    </field>
+    <field>
+        <id>general.unified_delay</id>
+        <label>Unified Delay</label>
+        <type>checkbox</type>
+        <help>Subtract TCP handshake delay so HTTP and HTTPS proxies show comparable latencies.</help>
+    </field>
+    <field>
+        <id>general.interface_name</id>
+        <label>Outbound Interface</label>
+        <type>dropdown</type>
+        <help>Bind outbound traffic to a specific interface (leave empty for auto).</help>
+    </field>
+</form>

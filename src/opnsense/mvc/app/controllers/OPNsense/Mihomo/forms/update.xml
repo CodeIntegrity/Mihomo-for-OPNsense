@@ -1,0 +1,56 @@
+<form>
+    <field>
+        <id>update.github_mirror</id>
+        <label>GitHub Mirror</label>
+        <type>text</type>
+        <help>Optional URL prefix used to accelerate GitHub downloads, e.g. https://ghproxy.com/.</help>
+    </field>
+    <field>
+        <id>update.github_token</id>
+        <label>GitHub Token</label>
+        <type>password</type>
+        <help>Optional Personal Access Token used to raise GitHub API rate limits to 5000/h.</help>
+    </field>
+    <field>
+        <id>update.auto_update_geoip</id>
+        <label>Auto Update GeoIP</label>
+        <type>checkbox</type>
+        <help>Automatically update Country.mmdb weekly.</help>
+    </field>
+    <field>
+        <id>update.auto_update_ui</id>
+        <label>Auto Update Dashboard UI</label>
+        <type>checkbox</type>
+        <help>Automatically update the embedded Dashboard UI monthly.</help>
+    </field>
+    <field>
+        <id>update.auto_update_core</id>
+        <label>Auto Update Mihomo Core</label>
+        <type>checkbox</type>
+        <help>Automatically update the Mihomo binary. NOT recommended — kernel updates can break connectivity.</help>
+    </field>
+    <field>
+        <id>update.health_check_url</id>
+        <label>Health Check URL</label>
+        <type>text</type>
+        <help>Used by the Dashboard Health Check button.</help>
+    </field>
+    <field>
+        <id>update.health_check_timeout</id>
+        <label>Health Check Timeout (ms)</label>
+        <type>text</type>
+        <help>Per-node timeout for the health check.</help>
+    </field>
+    <field>
+        <id>update.auto_backup_on_override</id>
+        <label>Backup before Override save</label>
+        <type>checkbox</type>
+        <help>Auto create a backup snapshot every time Override is saved.</help>
+    </field>
+    <field>
+        <id>update.auto_backup_on_profile_activate</id>
+        <label>Backup before Profile activation</label>
+        <type>checkbox</type>
+        <help>Auto create a backup snapshot every time a Profile is activated.</help>
+    </field>
+</form>

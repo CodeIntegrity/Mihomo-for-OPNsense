@@ -1,0 +1,112 @@
+<form>
+    <field>
+        <id>subscription.enabled</id>
+        <label>Enabled</label>
+        <type>checkbox</type>
+        <help>Activate auto-update cron for this subscription.</help>
+        <style>selectpicker</style>
+        <grid_view>
+            <column>
+                <type>command</type>
+                <commands>toggle</commands>
+                <width>6em</width>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.name</id>
+        <label>Name</label>
+        <type>text</type>
+        <help>Subscription name (becomes the profile name, prefixed with sub-). Allowed: letters, digits, underscore, dash.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>true</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.url</id>
+        <label>URL</label>
+        <type>text</type>
+        <help>Clash / Mihomo YAML subscription URL.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>true</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.user_agent</id>
+        <label>User-Agent</label>
+        <type>text</type>
+        <help>Some providers gate by User-Agent.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>false</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.interval</id>
+        <label>Auto-update Interval (hours)</label>
+        <type>text</type>
+        <help>0 disables auto-update. Suggested: 6.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>true</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.include_keyword</id>
+        <label>Include Keywords</label>
+        <type>text</type>
+        <help>Comma-separated. Proxy node name must contain at least one of these to be kept.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>false</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.exclude_keyword</id>
+        <label>Exclude Keywords</label>
+        <type>text</type>
+        <help>Comma-separated. Proxy node names matching any of these are dropped.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>false</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.last_update</id>
+        <label>Last Update</label>
+        <type>text</type>
+        <help>Read-only. Populated by sub.sh.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>true</visible>
+            </column>
+        </grid_view>
+    </field>
+    <field>
+        <id>subscription.last_status</id>
+        <label>Last Status</label>
+        <type>text</type>
+        <help>Read-only. idle / updating / done / failed.</help>
+        <grid_view>
+            <column>
+                <type>string</type>
+                <visible>true</visible>
+            </column>
+        </grid_view>
+    </field>
+</form>

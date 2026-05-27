@@ -16,7 +16,8 @@ ROOT="/usr/local"
 BIN_DIR="$ROOT/bin"
 WWW_DIR="$ROOT/www"
 CONF_DIR="$ROOT/etc"
-MENU_DIR="$ROOT/opnsense/mvc/app/models/OPNsense"
+MVC_DIR="$ROOT/opnsense/mvc/app"
+SCRIPTS_DIR="$ROOT/opnsense/scripts/mihomo"
 RC_DIR="$ROOT/etc/rc.d"
 PLUGINS="$ROOT/etc/inc/plugins.inc.d"
 ACTIONS="$ROOT/opnsense/service/conf/actions.d"
@@ -105,78 +106,43 @@ if ! file -b ./bin/mihomo 2>/dev/null | grep -qE 'ELF.*executable|FreeBSD'; then
 fi
 log_info "添加权限..."
 run_or_die chmod +x ./bin/* ./rc.d/*
-# conf/sub/*.sh 可能不存在（非首次安装），失败不终止
-chmod +x ./conf/sub/*.sh 2>/dev/null || true
 run_or_die cp -f bin/* "$BIN_DIR/"
-run_or_die cp -f www/*.php "$WWW_DIR/"
 run_or_die cp -f rc.d/* "$RC_DIR/"
 run_or_die cp -f rc.conf/* "$RC_CONF/"
 run_or_die cp -f plugins/* "$PLUGINS/"
-run_or_die cp -f actions/* "$ACTIONS/"
-run_or_die cp -R -f menu/* "$MENU_DIR/"
 
-# 菜单 VisibleName 走 OPNsense 默认 gettext 域翻译；OPNsense 字典里没有
-# "Backup"/"Subscriptions" 这类条目。检测 GUI 语言为 zh_CN 时，把菜单文本
-# 替换成中文字面（gettext 查不到原样返回 → 显示中文）。
-# 其它语言保留英文，让 OPNsense 字典自动翻译能翻的部分。
-GUI_LANG=$(awk '
-  /<webgui>/   { in_g = 1 }
-  /<\/webgui>/ { in_g = 0 }
-  in_g && /<language>/ {
-    line = $0
-    sub(/.*<language>/, "", line)
-    sub(/<\/language>.*/, "", line)
-    print line
-    exit
-  }
-' "$CONFIG_FILE" 2>/dev/null)
+# === MVC 部署：controllers/models/views + configd actions + scripts ===
+log_step "部署 MVC 层..."
+mkdir -p "$MVC_DIR/controllers/OPNsense/Mihomo/Api" \
+         "$MVC_DIR/controllers/OPNsense/Mihomo/forms" \
+         "$MVC_DIR/models/OPNsense/Mihomo/ACL" \
+         "$MVC_DIR/models/OPNsense/Mihomo/Menu" \
+         "$MVC_DIR/views/OPNsense/Mihomo" \
+         "$SCRIPTS_DIR"
+run_or_die cp -R -f ./src/opnsense/mvc/app/. "$MVC_DIR/"
+run_or_die cp -f ./src/opnsense/service/conf/actions.d/actions_mihomo.conf "$ACTIONS/"
+run_or_die cp -R -f ./src/opnsense/scripts/mihomo/. "$SCRIPTS_DIR/"
+chmod +x "$SCRIPTS_DIR"/*.sh "$SCRIPTS_DIR"/*.py 2>/dev/null || true
+log_success "MVC 层部署完成"
 
-if [ "$GUI_LANG" = "zh_CN" ]; then
-  MENU_XML="$MENU_DIR/Magic/Menu/Menu.xml"
-  if [ -f "$MENU_XML" ]; then
-    TMP_MENU=$(mktemp)
-    awk '
-      {
-        gsub(/VisibleName="Dashboard"/,     "VisibleName=\"仪表盘\"")
-        gsub(/VisibleName="Configuration"/, "VisibleName=\"配置\"")
-        gsub(/VisibleName="Backup"/,        "VisibleName=\"备份\"")
-        gsub(/VisibleName="Subscriptions"/, "VisibleName=\"订阅\"")
-        print
-      }
-    ' "$MENU_XML" > "$TMP_MENU" && mv "$TMP_MENU" "$MENU_XML"
-    log_info "  菜单标签已本地化为中文 (zh_CN)"
-  fi
-fi
-
-# 资产/脚本：始终更新（Country.mmdb / sub 脚本 / 内置 UI）
-mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mihomo/sub" "$CONF_DIR/mihomo/ui"
+# 资产/脚本：始终更新（Country.mmdb / 内置 UI）
+mkdir -p "$CONF_DIR/mihomo" "$CONF_DIR/mihomo/ui"
 if [ -f ./conf/Country.mmdb ]; then
 	run_or_die cp -f ./conf/Country.mmdb "$CONF_DIR/mihomo/"
-fi
-if [ -d ./conf/sub ]; then
-	# 排除 env 占位文件，避免覆盖用户残留
-	find ./conf/sub -maxdepth 1 -type f ! -name env -exec cp -f {} "$CONF_DIR/mihomo/sub/" \;
 fi
 if [ -d ./conf/ui ]; then
 	run_or_die cp -Rf ./conf/ui/. "$CONF_DIR/mihomo/ui/"
 fi
-
-# 部署新版 PHP 公共库
-if [ -d ./www/includes ]; then
-	mkdir -p "$WWW_DIR/includes"
-	run_or_die cp -f ./www/includes/* "$WWW_DIR/includes/"
-	log_success "PHP 公共库已部署"
-fi
 log_success "文件复制完成"
 
 # 创建 v2 目录结构
-log_step "创建 v2 目录结构..."
+log_step "创建配置目录结构..."
 mkdir -p "$CONF_DIR/mihomo/profiles"
 mkdir -p "$CONF_DIR/mihomo/backups"
 log_success "目录结构就绪"
 
-# 初始化 v2 配置文件：用户数据只在缺失时写入，避免覆盖
-log_step "初始化 v2 配置文件..."
+# 初始化配置文件：用户数据只在缺失时写入，避免覆盖
+log_step "初始化默认配置文件..."
 init_if_missing() {
 	local src="$1" dst="$2"
 	if [ ! -e "$dst" ] && [ -e "$src" ]; then
@@ -186,7 +152,6 @@ init_if_missing() {
 }
 init_if_missing ./conf/base.yaml      "$CONF_DIR/mihomo/base.yaml"
 init_if_missing ./conf/override.yaml  "$CONF_DIR/mihomo/override.yaml"
-init_if_missing ./conf/subs.json      "$CONF_DIR/mihomo/subs.json"
 init_if_missing ./conf/active.json    "$CONF_DIR/mihomo/active.json"
 init_if_missing ./conf/config.yaml    "$CONF_DIR/mihomo/config.yaml"
 # 默认 profile：只在 profiles/ 目录为空时铺设
@@ -194,9 +159,7 @@ if [ -z "$(ls -A "$CONF_DIR/mihomo/profiles" 2>/dev/null)" ] && [ -d ./conf/prof
 	cp -R ./conf/profiles/. "$CONF_DIR/mihomo/profiles/"
 	log_info "  初始化默认 profile"
 fi
-# 写入 v2 标志：全新安装路径直接预置 v2 布局，等同于已完成迁移
-touch "$CONF_DIR/mihomo/.migrated-v2"
-log_success "v2 配置就绪"
+log_success "配置就绪"
 
 # 统一设置文件权限
 log_step "设置文件权限..."
@@ -206,21 +169,20 @@ chmod 750 "$CONF_DIR/mihomo/profiles"
 chmod 750 "$CONF_DIR/mihomo/backups"
 chmod 640 "$CONF_DIR/mihomo/base.yaml" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/override.yaml" 2>/dev/null || true
-chmod 640 "$CONF_DIR/mihomo/subs.json" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/active.json" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/config.yaml" 2>/dev/null || true
 chmod 640 "$CONF_DIR/mihomo/profiles/"*.yaml 2>/dev/null || true
 log_success "权限设置完成"
 
-# 新建订阅程序
-log_step "添加订阅..."
+# 订阅入口脚本：转发到 MVC 脚本目录
+log_step "添加订阅入口..."
 cat>/usr/bin/sub<<'SUBEOF'
-#!/bin/bash
-# Mihomo subscription update entry — delegates to cron巡检 script
-bash /usr/local/etc/mihomo/sub/sub_cron.sh
+#!/bin/sh
+# Mihomo subscription cron entry — delegates to MVC script directory
+exec /usr/local/opnsense/scripts/mihomo/sub_cron.sh "$@"
 SUBEOF
 run_or_die chmod +x /usr/bin/sub
-log_success "订阅程序添加完成"
+log_success "订阅入口添加完成"
 
 # 安装运行依赖
 log_step "检查并安装运行依赖..."

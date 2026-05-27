@@ -4,248 +4,213 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Mihomo for OPNsense — 在 OPNsense 防火墙上集成 Mihomo（透明代理），通过 OPNsense Web UI 管理配置、服务控制和日志查看。仅在 x86_64 + OPNsense 26.1.6 测试通过。
+Mihomo for OPNsense — 在 OPNsense 防火墙上集成 Mihomo（透明代理），通过 OPNsense Web UI（MVC 模式）管理配置、Profile 切换、订阅、备份、内核与资源更新。仅在 x86_64 + OPNsense 26.1.6 测试通过。
+
+> **本项目不考虑与 v1（raw-PHP UI）的兼容**：无迁移脚本、无 302 跳转、无旧文件保留。当前仓库只包含 v2 实现。
 
 ## 技术栈
 
-- **Shell** — install.sh / uninstall.sh 部署脚本
-- **PHP** — OPNsense Web UI 页面（遵循 OPNsense `guiconfig.inc` + `head.inc` / `fbegin.inc` / `foot.inc` 框架）
+- **PHP** — OPNsense MVC 控制器（Phalcon），Volt 模板视图
+- **Python 3** — configd 后端脚本（YAML 合并、订阅抓取、内核/GeoIP/UI 更新、健康检查）
+- **POSIX sh / bash** — install.sh / uninstall.sh / sub_cron.sh
 - **FreeBSD rc.d** — 服务管理脚本，通过 `/usr/sbin/daemon` 包裹进程
+- **JS** — vanilla JS + OPNsense 自带 jQuery + Bootstrap，无外部框架
 
-## 架构
-
-### 部署流程 (install.sh)
-
-`install.sh` 是核心部署脚本，将仓库文件部署到 OPNsense 系统路径，并修改 `/conf/config.xml`：
-1. 复制 `bin/` → `/usr/local/bin/`（mihomo 二进制 + 工具）
-2. 复制 `www/` → `/usr/local/www/`（PHP Web 页面）
-3. 复制 `rc.d/` → `/usr/local/etc/rc.d/`（服务脚本）
-4. 复制 `actions/` → `/usr/local/opnsense/service/conf/actions.d/`（configd action 配置）
-5. 复制 `plugins/` → `/usr/local/etc/inc/plugins.inc.d/`（插件注册：服务列表 + syslog）
-6. 复制 `menu/` → `/usr/local/opnsense/mvc/app/models/OPNsense/`（菜单 XML）
-7. 复制 `conf/` → `/usr/local/etc/mihomo/`（mihomo 默认配置 + Country.mmdb）
-8. 创建 `/usr/bin/sub` → 订阅更新入口脚本
-9. 用 awk 修改 `/conf/config.xml`：添加 tun_3000 接口、防火墙规则、将 Unbound DNS 端口改为 5355
-10. 重启 configd、Unbound、防火墙
-
-### 服务控制三层架构
-
-```
-OPNsense Web UI (PHP)
-  → configctl <service> start/stop/restart/status  (configd action)
-    → /usr/local/etc/rc.d/<service>                  (FreeBSD rc.d script)
-      → /usr/sbin/daemon -P <pidfile> -o <logfile>   (守护进程包裹)
-        → /usr/local/bin/<binary>                     (实际程序)
-```
-
-- **PHP 层**：`www/services_mihomo.php` — 通过 `exec("/usr/local/sbin/configctl mihomo ...")` 调用 configd
-- **configd action 层**：`actions/actions_mihomo.conf` — 定义 start/stop/restart/status 等动作与 rc.d 脚本的映射；还注册了 cron 任务（订阅更新）
-- **rc.d 层**：`rc.d/mihomo` — FreeBSD 服务管理，使用 `/usr/sbin/daemon` 守护进程化
-- **插件层**：`plugins/mihomo.inc` — 向 OPNsense 注册服务（仪表盘显示 + syslog 设施 + WAN IP 变更时自动重启 mihomo）
-
-### DNS 链路
-
-```
-客户端 DNS 请求
-  → Mihomo (tun, dns-hijack any:53)     # 劫持所有 DNS
-    → Mihomo 内置 DNS 解析               # 直连/代理分流
-```
-
-### 端口分配
+## 端口分配
 
 | 端口 | 服务 |
-|------|------|
+| ------ | ------ |
 | 53 | Mihomo DNS 劫持入口 |
 | 5355 | Unbound DNS（OPNsense 默认 DNS 改到此端口） |
 | 7890 | Mihomo HTTP 代理 |
 | 7891 | Mihomo SOCKS5 代理 |
 | 9090 | Mihomo API / Dashboard UI |
 
-### 订阅机制
+## 仓库结构
 
-`sub/` 目录在仓库中不存在，由 `install.sh` 在部署时创建 `/usr/local/etc/mihomo/sub/`。订阅流程：
-- `www/sub.php` — Web UI：保存订阅 URL + 密钥到 `/usr/local/etc/mihomo/sub/env`，触发 `sub.sh` 后台执行
-- `sub.sh` — 下载订阅 → 解析代理节点 → 合并到 `/usr/local/etc/mihomo/config.yaml`
-- `/usr/bin/sub` — install.sh 生成的入口，指向 `bash /usr/local/etc/mihomo/sub/sub.sh`
-- 通过 configd action `actions_mihomo.conf` 中的 `[sub-update]` 注册为 cron 任务
+```text
+Mihomo-for-OPNsense/
+├── bin/                    — 静态打包的 mihomo 二进制（FreeBSD-amd64 ELF）
+├── conf/                   — 默认配置模板：base.yaml / override.yaml / Country.mmdb / ui/
+├── docs/superpowers/specs/ — 设计 + 实施计划文档
+├── lang/zh_CN/LC_MESSAGES/ — mihomo.po (中文) + mihomo.mo (编译产物)
+├── plugins/mihomo.inc      — OPNsense 服务注册（仪表盘 + syslog + WAN IP 变化重启)
+├── rc.d/mihomo             — FreeBSD rc.d 脚本
+├── rc.conf/mihomo          — rc.conf.d 启用配置
+├── src/opnsense/           — MVC 全量代码（详见下方）
+├── install.sh              — 部署脚本
+└── uninstall.sh            — 清理脚本
+```
 
-### PHP 页面结构
+### MVC 文件布局（`src/opnsense/`）
 
-所有 PHP 页面遵循相同模式：
-- 引入 `guiconfig.inc`、`head.inc`、`fbegin.inc`（OPNsense 框架）
-- 定义配置路径、通用函数（`execCommand`、`execBackgroundCommand`、`saveConfig`、`clearLogFile`、服务操作）
-- POST 处理 → 渲染 Bootstrap 风格 HTML 表格
-- 通过 `fetch()` + `setInterval` 轮询 `/status_*.php` 端点获取实时状态/日志
-- 引入 `foot.inc`
+```text
+mvc/app/
+├── controllers/OPNsense/Mihomo/
+│   ├── IndexController.php             — /ui/mihomo/ → dashboard 302
+│   ├── DashboardController.php         — 渲染 dashboard.volt
+│   ├── ConfigurationController.php     — 渲染 configuration.volt + 注入 Forms XML
+│   ├── Api/MihomoFileTrait.php         — 共享 Trait：lockedWrite/atomicWrite/configdRun/atomicConfigUpdate/mihomoApiCall/readProfiles/createBackup
+│   ├── Api/ServiceController.php       — service/{status,start,stop,restart,reconfigure}
+│   ├── Api/SettingsController.php      — ApiMutableModelControllerBase；set 后自动 reconfigure
+│   ├── Api/SubscriptionsController.php — ApiMutableModelControllerBase + refresh/log
+│   ├── Api/OverrideController.php      — override.yaml CRUD + validate + composedYaml
+│   ├── Api/ProfilesController.php      — 列表/激活/refresh/createEmpty/setYaml（含订阅解绑保护）
+│   ├── Api/UpdateController.php        — check/run/progress（GitHub 1h 缓存 + Token + Mirror）
+│   ├── Api/BackupController.php        — export/import/list/download/restore/delete（AES-256-CBC 可选）
+│   ├── Api/DashboardController.php     — traffic/logs/healthCheck/healthProgress
+│   └── forms/
+│       ├── general.xml controller.xml tun.xml dns.xml sniffer.xml update.xml — Settings 各 Group
+│       └── dialogSubscription.xml      — Subscription 编辑对话框（含 grid_view 自动派生列）
+├── models/OPNsense/Mihomo/
+│   ├── Mihomo.php / Mihomo.xml         — Settings（~40 字段）+ Subscription ArrayField + state.active_profile
+│   ├── ACL/ACL.xml                     — page-mihomo-dashboard / page-mihomo-configuration
+│   └── Menu/Menu.xml                   — VPN > Mihomo > Dashboard | Configuration
+└── views/OPNsense/Mihomo/
+    ├── dashboard.volt                  — 4 区块（状态/Profile/指标/日志）+ 自包含 JS 轮询
+    └── configuration.volt              — 8 Tab（Settings/Subscriptions/Profiles/Override/YAML/Log/Updates/Backup）+ Apply 按钮 + Subscription Dialog
 
-管理页面：`services_mihomo.php`、`sub.php`
-状态 API：`status_mihomo.php`（JSON）、`status_mihomo_logs.php`、`status_sub_logs.php`（text/plain）
+scripts/mihomo/
+├── reconfigure.py                      — configd [reconfigure] 入口：渲染 base.yaml → 三层合并 → mihomo -t → reload（PUT /configs?force=true）→ restart fallback
+├── sub.sh                              — 订阅抓取 worker（Python + py-yaml）
+├── sub_cron.sh                         — cron 入口（POSIX sh + jitter + flock）
+├── mihomo_health_check.sh              — 健康检查 worker（异步队列 + 进度文件）
+├── update_core.sh                      — 内核更新（SHA256 + smoke test + 自动回滚）
+├── update_geoip.sh                     — GeoIP 更新（PUT /configs/geo + reconfigure fallback）
+└── update_ui.sh                        — UI 更新（zashboard/metacubexd/yacd，zip/tgz/tar.xz）
 
-### 配置校验
+service/conf/actions.d/actions_mihomo.conf  — 11 个 configd action（长任务用 daemon -f 后台化 + 正则参数验证）
+```
 
-- Mihomo：保存前通过 `mihomo -t -f <tempfile>` 校验 YAML 语法
-- 保存前创建 `.bak.Ymd_His` 备份
+## 服务控制四层架构
+
+```text
+Web UI (Volt + JS)
+  → /api/mihomo/<resource>/<action>           (Phalcon Controller, 同步)
+    → configctl mihomo <action> [args]        (configd action, 短/长任务区分)
+      → /usr/sbin/daemon -f <script.py> ...   (长任务后台化，仅 sub-refresh/update-*/health-check)
+        OR
+      → <script.py> 直接同步                  (短任务：reconfigure / start / stop / restart / status)
+        → /usr/local/etc/rc.d/mihomo          (FreeBSD rc.d → daemon → /usr/local/bin/mihomo)
+```
+
+**configd 动作清单**（`src/opnsense/service/conf/actions.d/actions_mihomo.conf`）：
+
+| Action | 同步/异步 | 参数验证 |
+| --- | --- | --- |
+| start / stop / restart / status | 同步 | 无 |
+| reconfigure | 同步 | 无 |
+| sub-update（cron 入口） | 同步 | 无 |
+| sub-refresh | `daemon -f` 异步 | `[0-9a-f-]{36}` (OPNsense UUID) |
+| update-core / update-geoip | `daemon -f` 异步 | 无 |
+| update-ui | `daemon -f` 异步 | `(zashboard\|metacubexd\|yacd)` |
+| health-check | `daemon -f` 异步 | `[a-f0-9]{16,64},[a-zA-Z0-9_-]{1,64},(quick\|full)` |
+
+## 配置分层模型
+
+`config.yaml = merge(base, override, profile)` — 由 `reconfigure.py` 统一合成：
+
+- **base.yaml** — 由 Settings 表单从 OPNsense `config.xml` 渲染（general/controller/tun/dns/sniffer + 自定义 update 组）
+- **override.yaml** — 用户覆写片段（订阅刷新不会覆盖）。约定键：
+  - `prepend-rules` / `append-rules` — 插入/追加规则
+  - `append-proxies` — 追加自定义代理节点
+  - `prepend-proxy-groups` / `append-proxy-groups` — 插入/追加 proxy-groups
+  - 其余顶层键深度合并
+- **profile** — `profiles/<name>.yaml`，订阅生成（`sub-<name>.yaml`）或手动创建（无前缀）。仅包含 `proxies` / `proxy-groups` / `rules` / `proxy-providers` / `rule-providers`
+- **state.active_profile** — 存于 OPNsense config.xml，指向当前激活的 profile 文件名
+
+**配置应用**：所有写路径（Settings Save / Override Save / Profile Activate / 订阅刷新合并）统一走 `MihomoFileTrait::atomicConfigUpdate()` → `configctl mihomo reconfigure`。reconfigure 内：
+
+1. 读 config.xml 渲染 base.yaml
+2. 三层合并
+3. 写 `/tmp/mihomo-config.yaml.new`
+4. `mihomo -t -f` 校验
+5. 成功后 `os.replace` 到 `/usr/local/etc/mihomo/config.yaml`（保留 `.bak.<ts>`）
+6. `PUT /configs?force=true` 热重载；失败 fallback 到 `rc.d/mihomo onerestart`
+
+## 订阅机制
+
+- 订阅记录存于 OPNsense `/conf/config.xml`（`OPNsense/Mihomo/mihomo/subscriptions/subscription` ArrayField）
+- 字段：`enabled, name, url, user_agent, interval(hours), include_keyword, exclude_keyword, last_update, last_status(idle/updating/done/failed)`
+- 名称约束：`[a-zA-Z0-9_-]+`，生成的 profile 名为 `sub-<name>.yaml`
+- `sub.sh <uuid>` 抓取流程：
+  1. 每 UUID `flock /tmp/mihomo-sub-<uuid>.lock` 防并发
+  2. 在 `/conf/config.xml` 上 LOCK_EX 修改 `last_status=updating`
+  3. urllib 下载到内存，YAML 解析
+  4. 关键词过滤 proxies 节点名，同步重写 proxy-groups[].proxies 引用（保留 DIRECT/REJECT/跨组引用）
+  5. 合并到 base.yaml 后用 `mihomo -t -f` 验证
+  6. 通过则 `os.replace` 到 `profiles/sub-<name>.yaml`，写 `.meta.json`
+  7. 更新 config.xml 的 `last_status=done` + `last_update`（ISO 8601 UTC）
+  8. 若激活 profile 是本订阅，触发 `configctl mihomo reconfigure`
+- `sub_cron.sh` 由 OPNsense cron 调用：jitter 0-30s + 全局 flock + Python 扫 config.xml + 对到期订阅逐个调用 sub.sh
+
+## 资源更新
+
+| 资源 | GitHub 仓库 | 当前版本检测 | 更新方式 |
+| --- | --- | --- | --- |
+| Mihomo Core | `MetaCubeX/mihomo` | `mihomo -v` | 下载 .gz → SHA256 → gunzip → smoke test → 备份 → 原子 mv → restart → 10s 内未恢复回滚 |
+| GeoIP | `MetaCubeX/meta-rules-dat` | mtime 日期 | 下载 Country.mmdb → 备份 → 原子 mv → `PUT /configs/geo` 优先，fallback reconfigure |
+| Dashboard UI | `Zephyruso/zashboard` / `MetaCubeX/metacubexd` / `haishanh/yacd` | `ui/.version-<variant>` 文件 | 下载 zip/tgz/tar.xz → 路径穿越校验后解压 → 备份原 ui/ → 整目录 mv 替换 |
+
+GitHub API：所有 release 元数据缓存 `/tmp/mihomo-release-cache-*.json`，TTL 1h。可选 GitHub Token（提至 5000 req/h）+ GitHub Mirror 前缀。
+
+更新进度：每个脚本写入 `/tmp/mihomo-update-<resource>.json`，前端通过 `/api/mihomo/update/progress` 轮询。
+
+## 文件安全
+
+- 权限：所有 `/usr/local/etc/mihomo/` 下文件 `640 root:www`、目录 `750`
+- 并发：
+  - `MihomoFileTrait::lockedWrite()` — flock LOCK_EX + 5s 超时
+  - `reconfigure.py::_acquire_lock()` — `/tmp/mihomo-reconfigure.lock`（非阻塞，并发触发直接退出）
+  - `sub.sh` 每 UUID 独立锁 + 写 config.xml 时与 OPNsense 共享 LOCK_EX 同步
+- 原子写入：所有 config.yaml / base.yaml / override.yaml / profile.yaml 修改路径都走 tmp + rename
+
+## Dashboard 数据流
+
+| 区块 | 端点 | 频率 | 备注 |
+| --- | --- | --- | --- |
+| Service Status | `/api/mihomo/service/status` | 2s | 解析 `rc.d/mihomo status` + `ps -o etimes=` 算 uptime；提取 mihomo child PID（非 daemon wrapper） |
+| Active Profile | `/api/mihomo/profiles/active` | onload / 切换后 | 读 `profiles/<active>.meta.json` |
+| Realtime Metrics | `/api/mihomo/dashboard/traffic` | 2s | **后端差分**速率（`/tmp/mihomo-traffic-state.json` 暂存）；避免浏览器休眠失真 |
+| Recent Log Tail | `/api/mihomo/dashboard/logs?lines=30` | 5s | `tail -n` |
+| Health Check | POST `/dashboard/healthCheck` → poll `/dashboard/healthProgress?uuid=` | 2s | 异步队列，进度文件 `/tmp/mihomo-health-<uuid>.json`，90s 无更新视为失败 |
+
+**轮询异常处理**：指数退避（1s→2s→4s→max 10s）+ "Reconnecting..." 横幅；`visibilitychange` 事件暂停/恢复轮询。
+
+## 国际化
+
+gettext 标准（对齐 OPNsense helloworld 示例）：
+
+- Volt 模板：`{{ lang._('...') }}`
+- PHP 控制器：`gettext('...')`
+- Forms XML / Menu.xml / ACL.xml：框架自动调用 gettext
+
+翻译文件：`lang/zh_CN/LC_MESSAGES/mihomo.po` → 编译为 `mihomo.mo`，install.sh 部署到 `/usr/local/share/locale/zh_CN/LC_MESSAGES/`。
 
 ## 修改指引
 
-- **新增菜单项**：修改 `menu/Magic/Menu/Menu.xml`，添加新的 `<PageName>` 节点
-- **新增服务**：需要配套 rc.d 脚本 + actions conf + plugin inc + rc.conf + PHP 页面
-- **修改默认配置**：改 `conf/config.yaml`（mihomo）
-- **修改部署逻辑**：改 `install.sh`，注意 awk 对 `/conf/config.xml` 的操作
-- **修改 UI**：改对应 `www/*.php`，遵循 OPNsense 框架约定
+- **新增 Settings 字段**：改 `mvc/app/models/OPNsense/Mihomo/Mihomo.xml`（添加字段）+ 对应 Forms XML（添加 `<field>`）+ `reconfigure.py` 的 `render_base_from_xml`（XML 标签 → YAML key 映射）
+- **新增菜单项**：改 `mvc/app/models/OPNsense/Mihomo/Menu/Menu.xml`
+- **新增 API 端点**：在 `Api/<Existing>Controller.php` 加 `<name>Action()` 方法即可（OPNsense 路由自动派生）
+- **新增 configd action**：改 `service/conf/actions.d/actions_mihomo.conf` + 对应脚本；长任务用 `daemon -f` 包裹；用户输入参数必须有正则验证
+- **新增 Configuration Tab**：改 `views/OPNsense/Mihomo/configuration.volt` 的 nav-tabs + tab-content，配套加 API 控制器
+- **修改默认配置模板**：改 `conf/` 下的 base.yaml/override.yaml 等
+- **修改部署逻辑**：改 `install.sh`，注意 awk 对 `/conf/config.xml` 的 tun 接口/防火墙规则/Unbound 端口操作
 
----
+## 技术约束
 
-## 活跃任务：UI 重设计（2026-05-26）
+- **OPNsense MVC 模式**：UI 用 Volt + `layout_partials/` 官方 partial（`base_form` / `base_dialog` / `base_apply_button`）
+- **API 端点规范**：`/api/mihomo/<resource>/<action>`，标准 CRUD `searchItem|getItem|setItem|addItem|delItem|toggleItem`，业务动作直接命名
+- **特权操作经 configd**：所有写 mihomo 配置/启停服务 → `MihomoFileTrait::configdRun()`，禁止 PHP 直接 `exec` 启动特权命令
+- **JS 仅 vanilla + jQuery**：不引入框架或图表库
+- **不引入 WebSocket**：PHP 短轮询代理 Mihomo API
+- **不引入第三方 PHP YAML 库**：YAML 操作全部在 Python 端（py-yaml）
+- **仅 x86_64 + OPNsense 26.1.6 测试通过**
+- **长时操作必须后台化**：用 `daemon -f` 包裹，PHP 立即返回，前端轮询进度文件
 
-### 当前阶段
+## 设计/实施文档
 
-头脑风暴已完成，设计文档已确定并经审查修订。下一步是 **writing-plans → 实施编码**。
+- 设计：[docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-design.md](docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-design.md)
+- 实施计划：[docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-plan.md](docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-plan.md)
 
-### 设计文档
-
-→ [docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-design.md](docs/superpowers/specs/2026-05-26-mihomo-ui-redesign-design.md)
-
-### 重设计目标
-
-重写 OPNsense 的 Mihomo 集成 UI：
-1. **配置页重写**：结构化表单替代裸 YAML 文本框（base.yaml 表单化，选 ~40 个高频字段）
-2. **订阅配置切换**：多订阅 + 单激活 Profile 模式（profile 切换器）
-3. **极简数据面板**：Dashboard 页（状态卡片 + 流量数字 + 日志尾部），复杂功能依赖 external-ui
-4. **内核/资源在线更新**：mihomo / GeoIP / Dashboard UI 三资源在线更新 + 自动回滚
-5. **OPNsense 风格 UI**：遵循 OPNsense 框架约定 + gettext 国际化
-
-### 关键架构决策
-
-**配置分层模型（base + override + profile）**：
-
-```
-config.yaml = merge(base, override, profile)
-
-base.yaml      ← Settings 表单生成（general/tun/dns/sniffer/external-controller）
-override.yaml  ← 用户覆写片段（订阅刷新不会覆盖），单一文件 + 约定 key：
-                 prepend-rules / append-rules / append-proxies /
-                 prepend-proxy-groups / append-proxy-groups，其余顶层 key 深度合并
-profile        ← 订阅生成或手动创建（仅 proxies/proxy-groups/rules）
-```
-
-**配置切换**：混合机制——默认走 `PUT /configs?force=true` 热重载，失败 fallback 到 `configctl mihomo restart`。reload 后延迟 1-2s 再验状态防误判。
-
-**Profile 命名**：订阅生成的 profile 强制 `sub-` 前缀（如 `sub-airport-a`），手动创建的无前缀。`meta.json` 中 `source_type` 区分 `subscription` / `manual`。
-
-**文件安全**：
-- 权限：配置文件 `640 root:www`，目录 `750`
-- 并发：`lockedWrite()` + `flock()` 防止 Cron 与 Web UI 同时写入截断文件
-- 原子写入：`atomicConfigUpdate()` — 所有 config.yaml 修改路径（Settings Save / Override Save / Profile Activate / 订阅刷新合并）必须走此函数（写 tmp → `mihomo -t` 校验 → mv 覆盖 → reload）
-
-**Dashboard 数据流**：
-- 流量/内存/连接数 → `status_mihomo_traffic.php`（后端差分计算速率，避免浏览器休眠失真）
-- 节点健康检查 → 异步队列（写 job → 后台脚本分批 5 并发 → 前端轮询 `status_mihomo_health.php`），结果常驻显示
-- 轮询异常 → 指数退避（1s→2s→4s→max 10s）+ "Reconnecting..."
-- 页面切后台 → `visibilitychange` 暂停/恢复轮询
-- Dashboard UI 链接 → 动态读取 external-controller 地址，绑定 localhost 时给出提示
-
-### 新菜单结构
-
-```
-VPN > Mihomo
-├── Dashboard               (mihomo_dashboard.php)      — 落地页
-├── Configuration           (mihomo_configuration.php)  — 6 Tab:
-│   ├── Settings            (base.yaml 表单 A-F 组)
-│   ├── Override            (override.yaml 编辑器)
-│   ├── Profiles            (列表 + 切换 + 激活)
-│   ├── YAML                (当前 config.yaml 只读)
-│   ├── Log                 (mihomo.log 查看 + 过滤)
-│   └── Updates             (内核/GeoIP/UI 在线更新)
-├── Backup                  (mihomo_backup.php)         — 导入导出/加密
-└── Subscriptions           (mihomo_subscriptions.php)  — 订阅源 CRUD
-```
-
-### 新文件布局（PHP 层）
-
-```
-www/
-├── mihomo_dashboard.php
-├── mihomo_configuration.php    (6 Tab 单页)
-├── mihomo_backup.php
-├── mihomo_subscriptions.php
-├── status_mihomo.php           (现有，扩展 pid+uptime)
-├── status_mihomo_logs.php      (现有，+?level=/--lines=)
-├── status_sub_logs.php         (现有，读 /var/log/mihomo_sub.log)
-├── status_mihomo_traffic.php   (新增，后端差分速率)
-├── status_mihomo_health.php    (新增，异步 Health Check 进度)
-├── status_mihomo_update.php    (新增，资源更新进度)
-└── includes/
-    └── mihomo_lib.inc.php      (公共库：
-        - lockedWrite() / atomicConfigUpdate()
-        - reloadMihomo() / restartMihomo()
-        - mergeAll()            — 三层合并，手写实现不用通用 deep-merge 库
-        - mihomoApiCall() / secretFromBase()
-        - readSubs() / writeSubs() / readProfiles() / activateProfile()
-        - 按区块注释划分：// === CONFIG === // === API === // === MERGE ===)
-
-/usr/local/etc/mihomo/ (运行时)：
-├── base.yaml / override.yaml / config.yaml / config.yaml.bak.<ts>
-├── profiles/sub-<name>.yaml / <name>.meta.json
-├── subs.json / active.json / sub/ / ui/ / Country.mmdb
-└── backups/  (自动备份，保留最近 10 份)
-
-/var/log/mihomo_sub.log  (FHS 合规，动态日志放 /var/log/)
-```
-
-### Settings 表单字段分组（base.yaml ~40 个高频字段）
-
-| Group | Key Fields |
-|---|---|
-| A: General | port, socks-port, mixed-port, allow-lan, mode, log-level, ipv6, interface-name, tcp-concurrent, find-process-mode, global-client-fingerprint, unified-delay |
-| B: External Controller | external-controller, secret, external-ui (readonly) |
-| C: TUN | enable, stack, device=tun_3000, mtu, auto-route, strict-route, auto-detect-interface, dns-hijack |
-| D: DNS | enable, listen (含 53 端口冲突检测), ipv6, enhanced-mode, fake-ip-range, default-nameserver:5355, nameserver, fallback, fake-ip-filter, use-hosts, hosts |
-| E: Sniffer | enable, force-dns-mapping, parse-pure-ip, override-destination, sniff ports |
-| F: Auto Update | GitHub Mirror, GitHub Token (可选), auto-update 开关, Health Check URL, timeout |
-
-表单未覆盖的字段由 YAML Tab 直接编辑 base.yaml，Save 时读取现有文件 → 覆盖表单管辖 key → 写回（不丢失未管辖字段）。
-
-### 订阅机制（重写后）
-
-- `subs.json` 字段：`id, name, url, user_agent, enabled, include_keyword, exclude_keyword, update_interval_hours, last_update, last_status(updating/done/failed)`
-- `sub.sh <sub_id>` 参数化；下载前标记 `last_status=updating`；写入前先 `mihomo -t` 校验；完成标记 `done` 或 `failed`
-- `sub_cron.sh`：每小时触发 → `sleep $((RANDOM % 30))` 随机延迟 → `flock -n` 防并发 → 遍历到期订阅
-- 关键词过滤仅作用于 proxies 节点名，不影响 proxy-groups 的正则匹配
-
-### 资源更新
-
-- mihomo 内核 / GeoIP / Dashboard UI 三类在线更新
-- GitHub API：`/tmp/mihomo-latest-release.json` 缓存 TTL 1h + 可选 Token 提额
-- 内核更新流程：下载 .gz → SHA256 校验 → smoke test → 备份 → 原子替换 → restart → 轮询 10s 未恢复则自动回滚
-- GeoIP 更新前备份；走 `PUT /configs/geo` 热重载（需实测，不支持则 fallback 到 reload）
-- UI 更新：目录级原子替换 + 可一键回滚
-- Updates Tab 点击更新后 UI 进入锁定状态
-
-### 迁移 (migrate.sh)
-
-install.sh 检测 `base.yaml` 不存在时运行：
-0. **先停止 mihomo**（防新旧配置同时跑）
-1. 备份当前 → 解析旧 config.yaml → 拆分为 base.yaml + profiles/legacy.yaml + active.json + 空 override.yaml
-2. 旧 sub/env → subs.json 条目
-3. 校验合成结果 → 通过才写 `.migrated-v2` 标志 + 启动 mihomo
-4. 失败 → 保留旧文件不动，**拒绝注册新菜单/新 PHP 页面**，UI 显示强拦截错误
-5. 幂等（检测 .migrated-v2 跳过）
-
-旧 URL `/services_mihomo.php` / `/sub.php` → 302 跳转。Dashboard 顶显示可关闭升级横幅 2 周。
-
-### 国际化
-
-gettext 标准。翻译文件 `lang/zh_CN/LC_MESSAGES/mihomo.po` → 编译 `.mo`。`install.sh` 复制后重启 Web GUI。所有新 PHP 用 `gettext("...")`。
-
-### 明确不做（Out of Scope）
-
-首次向导、流媒体解锁检测、Fake-IP/Redir-Host 切换、多内核切换、自定义 Hosts 独立页、防火墙规则注入、Chain Proxy、游戏规则、图表/折线图、WebSocket 直连、iframe external-ui、V2Ray 原生格式订阅转换（首期仅 Clash/Mihomo YAML）、Regex 关键词过滤、响应式布局、per-profile override、Log 增量 offset 模式
-
-### 技术约束
-
-- 仅 vanilla JS（fetch + setInterval），不引入 JS 框架或图表库
-- 不引入 WebSocket（PHP 短轮询代理 Mihomo API）
-- 不引入第三方 YAML 库（手写合并，风险项：可能丢失注释/锚点，实施时再评估）
-- 仅 x86_64 + OPNsense 26.1.6 测试通过
-- 后台耗时操作统一走 `execBackgroundCommand` + 前端轮询进度
+实施状态（2026-05-27）：P0（骨架）/ P1（Dashboard）/ P2（Configuration 8 Tab）/ P3（Subscriptions + Update 脚本）/ P5（i18n + 收尾）全部完成。所有改动在 OPNsense VM 上的端到端验证尚未进行。

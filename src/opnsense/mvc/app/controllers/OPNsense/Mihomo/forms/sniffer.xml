@@ -1,0 +1,50 @@
+<form>
+    <field>
+        <id>sniffer.enable</id>
+        <label>Enable</label>
+        <type>checkbox</type>
+        <help>Enable traffic sniffing to recover the destination domain from intercepted connections.</help>
+    </field>
+    <field>
+        <id>sniffer.force_dns_mapping</id>
+        <label>Force DNS Mapping</label>
+        <type>checkbox</type>
+        <help>Force replace destination IP with sniffed domain.</help>
+    </field>
+    <field>
+        <id>sniffer.parse_pure_ip</id>
+        <label>Parse Pure IP</label>
+        <type>checkbox</type>
+        <help>Run sniffer even when the destination has no associated domain.</help>
+    </field>
+    <field>
+        <id>sniffer.override_destination</id>
+        <label>Override Destination</label>
+        <type>checkbox</type>
+        <help>Use sniffed domain to override the original destination.</help>
+    </field>
+    <field>
+        <id>sniffer.sniff_http_ports</id>
+        <label>Sniff HTTP Ports</label>
+        <type>text</type>
+        <help>Comma-separated ports / ranges to sniff for HTTP traffic.</help>
+    </field>
+    <field>
+        <id>sniffer.sniff_tls_ports</id>
+        <label>Sniff TLS Ports</label>
+        <type>text</type>
+        <help>Comma-separated ports / ranges to sniff for TLS SNI.</help>
+    </field>
+    <field>
+        <id>sniffer.sniff_quic_ports</id>
+        <label>Sniff QUIC Ports</label>
+        <type>text</type>
+        <help>Comma-separated ports / ranges to sniff for QUIC SNI.</help>
+    </field>
+    <field>
+        <id>sniffer.skip_domains</id>
+        <label>Skip Domains</label>
+        <type>text</type>
+        <help>Comma-separated domain patterns excluded from sniffing.</help>
+    </field>
+</form>
