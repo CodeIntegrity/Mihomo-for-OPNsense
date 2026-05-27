@@ -38,8 +38,7 @@ class ServiceController extends ApiControllerBase
         $uptime = null;
         if ($running && $pid) {
             // FreeBSD ps -o etimes= gives elapsed seconds.
-            $cmd = sprintf('ps -o etimes= -p %d 2>/dev/null', $pid);
-            $val = trim((string)@shell_exec($cmd));
+            $val = trim($this->execRead(sprintf('ps -o etimes= -p %d 2>/dev/null', $pid)));
             if ($val !== '' && ctype_digit($val)) {
                 $uptime = (int)$val;
             }
@@ -110,7 +109,7 @@ class ServiceController extends ApiControllerBase
         if (!is_executable($bin)) {
             return $cached = '';
         }
-        $out = (string)@shell_exec(escapeshellarg($bin) . ' -v 2>&1');
+        $out = $this->execRead(escapeshellarg($bin) . ' -v 2>&1');
         if ($out === '') {
             return $cached = '';
         }

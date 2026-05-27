@@ -382,8 +382,13 @@ $(function() {
     'use strict';
 
     // Hide duplicate "Full help" toggles (one per form block); keep only the first.
+    // Robust approach: hide the parent <label> (which wraps both the checkbox and
+    // the "Full help" text), falling back to the checkbox itself.
     $('.mihomo-tab-content .act_toggle_full_help').each(function(i) {
-        if (i > 0) $(this).closest('.checkbox').hide();
+        if (i > 0) {
+            var $p = $(this).parent('label');
+            if ($p.length) { $p.hide(); } else { $(this).hide(); }
+        }
     });
 
     // ----- Hash routing — preserve current tab across reloads -----
@@ -712,7 +717,16 @@ $(function() {
                     .html('<span class="fa fa-undo"></span>')
                     .click(function() {
                         if (!confirm('{{ lang._('Restore from this backup?') }}')) return;
-                        $.post('/api/mihomo/backup/restore', {file: b.file}).done(loadBackupList);
+                        var data = {file: b.file};
+                        if (/\.enc$/.test(b.file)) {
+                            var pw = prompt('{{ lang._('This backup is encrypted. Enter password (≥ 8 chars):') }}');
+                            if (!pw || pw.length < 8) {
+                                alert('{{ lang._('encrypted backup requires a password') }}');
+                                return;
+                            }
+                            data.password = pw;
+                        }
+                        $.post('/api/mihomo/backup/restore', data).done(loadBackupList);
                     }));
                 $cmds.append(' ', $('<button class="btn btn-xs btn-default">')
                     .html('<span class="fa fa-trash-o"></span>')

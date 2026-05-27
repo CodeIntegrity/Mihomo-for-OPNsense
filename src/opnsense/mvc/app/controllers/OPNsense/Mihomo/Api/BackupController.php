@@ -190,14 +190,13 @@ class BackupController extends ApiControllerBase
             return ['status' => 'failed', 'message' => 'POST required'];
         }
         $file = (string)$this->request->getPost('file', null, '');
-        $password = (string)$this->request->getPost('password', null, '');
-        $strategy = (string)$this->request->getPost('strategy', null, 'overwrite');
         $path = $this->resolveBackup($file);
         if ($path === null) {
             return ['status' => 'failed', 'message' => 'backup not found'];
         }
 
         // Reuse import path by spoofing _FILES.
+        // importAction reads password + strategy from $_POST directly.
         $_FILES['file'] = [
             'name'     => basename($path),
             'type'     => 'application/octet-stream',

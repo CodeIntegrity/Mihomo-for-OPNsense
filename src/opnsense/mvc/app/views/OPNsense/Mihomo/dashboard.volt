@@ -336,10 +336,32 @@
     loadProfileList();
 
     // ----- service buttons -----
+    var svcPending = false;
     function svcAction(action) {
+        if (svcPending) return;
+        svcPending = true;
+        // Optimistic UI: disable buttons immediately while the action runs.
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('btn-stop').disabled = true;
+        document.getElementById('btn-restart').disabled = true;
+        var prevText = document.getElementById('svc-text').textContent;
+        document.getElementById('svc-text').textContent = '{{ lang._('Please wait...') }}';
         fetch('/api/mihomo/service/' + action, {method: 'POST', credentials: 'same-origin',
                                                 headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(function(r) { return r.json(); });
+            .then(function(r) { return r.json(); })
+            .then(function(j) {
+                if (j.status !== 'ok') {
+                    document.getElementById('svc-text').textContent = j.message || prevText;
+                }
+                // Let the 2s poller restore button states — configd type:script
+                // actions return before the rc.d script finishes.
+            })
+            .catch(function() {
+                document.getElementById('svc-text').textContent = prevText;
+            })
+            .finally(function() {
+                svcPending = false;
+            });
     }
     document.getElementById('btn-start').onclick   = function(){ svcAction('start'); };
     document.getElementById('btn-stop').onclick    = function(){ svcAction('stop'); };

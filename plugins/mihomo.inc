@@ -10,6 +10,10 @@ function mihomo_services()
 {
     global $config;
 
+    // Bind the mihomo gettext domain so translations under
+    // /usr/local/share/locale/zh_CN/LC_MESSAGES/mihomo.mo are found.
+    bindtextdomain('mihomo', '/usr/local/share/locale');
+
     $services = array();
 
         $services[] = array(

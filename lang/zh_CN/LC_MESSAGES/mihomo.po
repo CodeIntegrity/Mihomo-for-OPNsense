@@ -787,3 +787,14 @@ msgstr "失败"
 # OptionField values for find_process_mode
 msgid "strict (may fail on FreeBSD)"
 msgstr "strict（在 FreeBSD 上可能无效）"
+
+# Service action feedback
+msgid "Please wait..."
+msgstr "请稍候..."
+
+# Encrypted backup restore
+msgid "encrypted backup requires a password"
+msgstr "加密备份需要密码"
+
+msgid "This backup is encrypted. Enter password (≥ 8 chars):"
+msgstr "该备份已加密，请输入密码（至少8位）："

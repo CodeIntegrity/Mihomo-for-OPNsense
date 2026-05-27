@@ -215,10 +215,18 @@ class UpdateController extends ApiControllerBase
             return null;
         }
         // Slim down — we only ever need a few fields.
+        // Include "assets" so the Python update scripts can reuse this cache
+        // (they require both "tag_name" AND "assets" to consider a cache valid).
         return [
             'tag_name'     => (string)$data['tag_name'],
             'published_at' => (string)($data['published_at'] ?? ''),
             'html_url'     => (string)($data['html_url'] ?? ''),
+            'assets'       => array_map(function ($a) {
+                return [
+                    'name' => (string)($a['name'] ?? ''),
+                    'url'  => (string)($a['browser_download_url'] ?? ''),
+                ];
+            }, $data['assets'] ?? []),
         ];
     }
 
@@ -229,7 +237,7 @@ class UpdateController extends ApiControllerBase
             if (!is_executable($bin)) {
                 return '';
             }
-            $out = (string)@shell_exec(escapeshellarg($bin) . ' -v 2>&1');
+            $out = $this->execRead(escapeshellarg($bin) . ' -v 2>&1');
             if (preg_match('/v[\d.]+/', $out, $m)) {
                 return $m[0];
             }

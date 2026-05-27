@@ -156,10 +156,37 @@ trait MihomoFileTrait
             return '';
         }
         $lines = max(1, (int)$lines);
-        // Use shell tail when available — handles huge logs correctly.
         $cmd = sprintf('tail -n %d %s 2>/dev/null', $lines, escapeshellarg($file));
-        $out = @shell_exec($cmd);
-        return $out === null ? '' : $out;
+        return $this->execRead($cmd);
+    }
+
+    /**
+     * Run a shell command and return its stdout. Tries shell_exec first,
+     * then proc_open as a fallback (for environments where shell_exec is
+     * disabled via disable_functions).
+     */
+    protected function execRead($cmd)
+    {
+        $out = (string)@shell_exec($cmd);
+        if ($out !== '') {
+            return $out;
+        }
+        if (function_exists('proc_open')) {
+            $proc = @proc_open($cmd, [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ], $pipes);
+            if (is_resource($proc)) {
+                fclose($pipes[0]);
+                $out = stream_get_contents($pipes[1]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                proc_close($proc);
+                return (string)$out;
+            }
+        }
+        return '';
     }
 
     /**
@@ -309,6 +336,11 @@ trait MihomoFileTrait
         $dir = $this->mihomoPath('backups');
         if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
             throw new \RuntimeException("cannot create backup dir: {$dir}");
+        }
+        // Ensure profiles/ exists (tar will fail if a listed path is missing).
+        $profilesDir = $this->mihomoPath('profiles');
+        if (!is_dir($profilesDir)) {
+            @mkdir($profilesDir, 0750, true);
         }
         $ts = date('Ymd-His');
         $safeLabel = preg_replace('/[^a-zA-Z0-9_-]/', '_', $label);
