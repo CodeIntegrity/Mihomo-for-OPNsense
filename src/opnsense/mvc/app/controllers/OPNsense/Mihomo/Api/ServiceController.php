@@ -25,7 +25,12 @@ class ServiceController extends ApiControllerBase
             return ['status' => 'unknown', 'message' => $e->getMessage()];
         }
 
-        $running = (stripos($out, 'is running') !== false) || (stripos($out, ' running') !== false);
+        $notRunning = preg_match('/\bis not running\b|pid file exists but process is not running/i', $out);
+        $running = !$notRunning && (
+            preg_match('/\bis running\b/i', $out) ||
+            preg_match('/\bwrapper is running as pid\s+\d+/i', $out) ||
+            preg_match('/\bprocess is running as pid\s+\d+/i', $out)
+        );
         $pid = null;
         // rc.d/mihomo prints "daemon pid X, mihomo pid Y" — prefer the mihomo
         // child so uptime reflects the actual process, not the daemon(8) wrapper.

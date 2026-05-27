@@ -60,7 +60,7 @@ trait MihomoFileTrait
     {
         $timeout = $timeout === null ? self::$LOCK_TIMEOUT : $timeout;
         $dir = dirname($file);
-        if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
             throw new \RuntimeException("cannot create directory: {$dir}");
         }
 
@@ -94,7 +94,7 @@ trait MihomoFileTrait
             throw new \RuntimeException("partial write: {$file}");
         }
 
-        @chmod($file, 0640);
+        @chmod($file, 0660);
         return true;
     }
 
@@ -105,14 +105,14 @@ trait MihomoFileTrait
     protected function atomicWrite($file, $content)
     {
         $dir = dirname($file);
-        if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
             throw new \RuntimeException("cannot create directory: {$dir}");
         }
         $tmp = $file . '.tmp.' . posix_getpid();
         if (@file_put_contents($tmp, $content) === false) {
             throw new \RuntimeException("cannot write tmp file: {$tmp}");
         }
-        @chmod($tmp, 0640);
+        @chmod($tmp, 0660);
         if (!@rename($tmp, $file)) {
             @unlink($tmp);
             throw new \RuntimeException("rename failed: {$tmp} -> {$file}");
@@ -369,13 +369,13 @@ trait MihomoFileTrait
     protected function createBackup($label = 'auto')
     {
         $dir = $this->mihomoPath('backups');
-        if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0770, true)) {
             throw new \RuntimeException("cannot create backup dir: {$dir}");
         }
         // Ensure profiles/ exists (tar will fail if a listed path is missing).
         $profilesDir = $this->mihomoPath('profiles');
         if (!is_dir($profilesDir)) {
-            @mkdir($profilesDir, 0750, true);
+            @mkdir($profilesDir, 0770, true);
         }
         $ts = date('Ymd-His');
         $safeLabel = preg_replace('/[^a-zA-Z0-9_-]/', '_', $label);
@@ -390,7 +390,7 @@ trait MihomoFileTrait
             @unlink($file);
             throw new \RuntimeException('tar failed: ' . implode("\n", $out));
         }
-        @chmod($file, 0640);
+        @chmod($file, 0660);
         $this->pruneBackups($dir, 10);
         return $file;
     }

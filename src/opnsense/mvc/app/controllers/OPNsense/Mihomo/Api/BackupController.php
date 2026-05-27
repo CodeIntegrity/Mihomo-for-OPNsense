@@ -243,10 +243,10 @@ class BackupController extends ApiControllerBase
         if (is_dir($stage . '/profiles')) {
             // Replace the entire profiles directory.
             $this->recursiveRm($this->mihomoPath('profiles'));
-            @mkdir($this->mihomoPath('profiles'), 0750, true);
+            @mkdir($this->mihomoPath('profiles'), 0770, true);
             foreach (glob($stage . '/profiles/*') ?: [] as $p) {
                 @copy($p, $this->mihomoPath('profiles/' . basename($p)));
-                @chmod($this->mihomoPath('profiles/' . basename($p)), 0640);
+                @chmod($this->mihomoPath('profiles/' . basename($p)), 0660);
             }
         }
     }
@@ -263,7 +263,7 @@ class BackupController extends ApiControllerBase
         if (is_dir($stage . '/profiles')) {
             foreach (glob($stage . '/profiles/*') ?: [] as $p) {
                 @copy($p, $this->mihomoPath('profiles/' . basename($p)));
-                @chmod($this->mihomoPath('profiles/' . basename($p)), 0640);
+                @chmod($this->mihomoPath('profiles/' . basename($p)), 0660);
             }
         }
     }

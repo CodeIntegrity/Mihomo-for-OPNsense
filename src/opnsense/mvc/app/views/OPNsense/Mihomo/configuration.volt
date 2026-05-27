@@ -381,15 +381,23 @@ prepend-proxy-groups:
 $(function() {
     'use strict';
 
-    // Hide duplicate "Full help" toggles (one per form block); keep only the first.
-    // Robust approach: hide the parent <label> (which wraps both the checkbox and
-    // the "Full help" text), falling back to the checkbox itself.
-    $('.mihomo-tab-content .act_toggle_full_help').each(function(i) {
-        if (i > 0) {
-            var $p = $(this).parent('label');
-            if ($p.length) { $p.hide(); } else { $(this).hide(); }
-        }
-    });
+    function dedupeFullHelpToggles() {
+        $('.mihomo-tab-content .act_toggle_full_help').each(function(i) {
+            if (i === 0) return;
+            var $toggle = $(this);
+            var $container = $toggle.closest('label, .checkbox, .form-group');
+            if ($container.length) {
+                $container.hide();
+                return;
+            }
+            var next = this.nextSibling;
+            if (next && next.nodeType === 3 && /Full help/.test(next.nodeValue)) {
+                next.nodeValue = '';
+            }
+            $toggle.hide();
+        });
+    }
+    dedupeFullHelpToggles();
 
     // ----- Hash routing — preserve current tab across reloads -----
     var hash = window.location.hash || '#settings';

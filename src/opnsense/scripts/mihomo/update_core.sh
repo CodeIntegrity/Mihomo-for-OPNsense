@@ -21,6 +21,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -33,7 +34,7 @@ RELEASE_CACHE = "/tmp/mihomo-release-cache-core.json"
 BIN_PATH = "/usr/local/bin/mihomo"
 CONFIG_PATH = "/conf/config.xml"
 REPO = "MetaCubeX/mihomo"
-ASSET_RE_GZ = "mihomo-freebsd-amd64-v"  # asset filename prefix
+ASSET_RE_GZ = "mihomo-freebsd-amd64"  # asset filename prefix
 CONFIGCTL = "/usr/local/sbin/configctl"
 
 
@@ -112,19 +113,56 @@ def get_latest_release() -> dict:
 
 def pick_asset(release: dict) -> tuple[str, str]:
     """Return (gz_url, sha256_url)."""
-    gz_url = sha_url = ""
+    tag = release.get("tag_name", "")
+    assets = {
+        a.get("name", ""): a.get("url", "")
+        for a in (release.get("assets") or [])
+        if a.get("name") and a.get("url")
+    }
+
+    preferred = f"{ASSET_RE_GZ}-{tag}.gz" if tag else ""
+    candidates = []
+    if preferred:
+        candidates.append(preferred)
+
     for a in release.get("assets") or []:
         name = a.get("name", "")
-        url  = a.get("url", "")
-        if not name or not url:
+        if (
+            name.startswith(f"{ASSET_RE_GZ}-")
+            and name.endswith(".gz")
+            and "-compatible-" not in name
+            and not re.search(r"-v[123]-", name)
+        ):
+            candidates.append(name)
+    for a in release.get("assets") or []:
+        name = a.get("name", "")
+        if name.startswith(f"{ASSET_RE_GZ}-compatible-") and name.endswith(".gz"):
+            candidates.append(name)
+    for a in release.get("assets") or []:
+        name = a.get("name", "")
+        if name.startswith(f"{ASSET_RE_GZ}-") and name.endswith(".gz"):
+            candidates.append(name)
+
+    seen = set()
+    for name in candidates:
+        if name in seen:
             continue
-        if name.startswith(ASSET_RE_GZ) and name.endswith(".gz") and "amd64" in name:
-            gz_url = url
-        elif name.startswith(ASSET_RE_GZ) and (name.endswith(".sha256") or name.endswith(".sha256sum")) and "amd64" in name:
-            sha_url = url
-    if not gz_url:
+        seen.add(name)
+        gz_url = assets.get(name)
+        if not gz_url:
+            continue
+        sha_url = (
+            assets.get(name + ".sha256")
+            or assets.get(name + ".sha256sum")
+            or assets.get(name[:-3] + ".sha256")
+            or assets.get(name[:-3] + ".sha256sum")
+            or ""
+        )
+        return gz_url, sha_url
+
+    if not candidates:
         raise RuntimeError("no freebsd-amd64 .gz asset in release")
-    return gz_url, sha_url
+    raise RuntimeError("no downloadable freebsd-amd64 .gz asset in release")
 
 
 def apply_mirror(url: str) -> str:
