@@ -39,6 +39,10 @@ class UpdateController extends ApiControllerBase
         'yacd'       => 'haishanh/yacd',
     ];
 
+    /** Last fetch error details (set by fetchLatestRelease). */
+    private $_lastFetchCode = 0;
+    private $_lastFetchError = null;
+
     /**
      * GET /api/mihomo/update/check?resource=<core|geoip|ui>&variant=<...>
      * Returns { current, latest, hasUpdate, cached_at }.
@@ -70,7 +74,16 @@ class UpdateController extends ApiControllerBase
                     $latest = json_decode((string)@file_get_contents($cacheFile), true) ?: null;
                 }
                 if ($latest === null) {
-                    return ['status' => 'failed', 'message' => 'GitHub API unavailable'];
+                    $msg = 'GitHub API unavailable';
+                    $code = $this->_lastFetchCode ?? 0;
+                    if ($code === 403) {
+                        $msg = 'GitHub API rate limited — configure a token in Settings > Auto Update';
+                    } elseif ($code > 0) {
+                        $msg = "GitHub API returned HTTP {$code}";
+                    } elseif ($err = $this->_lastFetchError ?? null) {
+                        $msg = "GitHub API unreachable: {$err}";
+                    }
+                    return ['status' => 'failed', 'message' => $msg];
                 }
             } else {
                 @file_put_contents($cacheFile, json_encode($latest));
@@ -124,12 +137,23 @@ class UpdateController extends ApiControllerBase
                 $this->configdRun('update-' . $resource);
             }
         } catch (\Exception $e) {
-            @file_put_contents($progressFile, json_encode([
-                'state'   => 'failed',
-                'message' => $e->getMessage(),
-            ]));
+            @unlink($progressFile);
             return ['status' => 'failed', 'message' => $e->getMessage()];
         }
+
+        // Verify the background worker actually started.
+        // daemon -f returns immediately (its job is to fork), so a successful
+        // configd response does NOT mean the Python script is running.  We
+        // sleep 2 s then check whether the progress file has been touched by
+        // the worker (the `updated` field is only written by the Python
+        // side).  If it is still our original seed the worker likely crashed.
+        sleep(2);
+        $check = json_decode((string)@file_get_contents($progressFile), true);
+        if (!is_array($check) || ($check['step'] ?? '') === 'starting') {
+            @unlink($progressFile);
+            return ['status' => 'failed', 'message' => 'update worker failed to start'];
+        }
+
         return ['status' => 'ok'];
     }
 
@@ -206,12 +230,17 @@ class UpdateController extends ApiControllerBase
         ]);
         $body = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch) ?: null;
         curl_close($ch);
         if ($body === false || $code < 200 || $code >= 300) {
+            $this->_lastFetchCode = $code;
+            $this->_lastFetchError = $error;
             return null;
         }
         $data = json_decode((string)$body, true);
         if (!is_array($data) || empty($data['tag_name'])) {
+            $this->_lastFetchCode = $code;
+            $this->_lastFetchError = 'empty or malformed response';
             return null;
         }
         // Slim down — we only ever need a few fields.

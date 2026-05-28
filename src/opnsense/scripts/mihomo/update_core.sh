@@ -45,12 +45,24 @@ def progress(state: str, step: str = "", percent: int = 0, message: str = "") ->
         with open(PROGRESS, "w", encoding="utf-8") as fp:
             json.dump(payload, fp, ensure_ascii=False)
         os.chmod(PROGRESS, 0o640)
-        try:
-            import grp
-            os.chown(PROGRESS, 0, grp.getgrnam("www").gr_gid)
-        except (ImportError, KeyError, PermissionError, OSError):
-            pass
+        _chown_www(PROGRESS)
     except OSError:
+        pass
+
+
+def _chown_www(path: str) -> None:
+    """Chown path to root:www. Best-effort — no-op if unresolvable."""
+    try:
+        import grp
+        gid = grp.getgrnam("www").gr_gid
+    except (ImportError, KeyError):
+        try:
+            gid = os.stat(path).st_gid  # keep existing group
+        except OSError:
+            return
+    try:
+        os.chown(path, 0, gid)
+    except (PermissionError, OSError):
         pass
 
 
