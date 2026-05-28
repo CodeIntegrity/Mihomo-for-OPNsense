@@ -1,20 +1,20 @@
 <form>
     <field>
         <id>controller.external_controller</id>
-        <label>External Controller</label>
+        <label>外部控制器</label>
         <type>text</type>
-        <help>RESTful API listen address. Default: 0.0.0.0:9090.</help>
+        <help>RESTful API 监听地址。默认值：0.0.0.0:9090。</help>
     </field>
     <field>
         <id>controller.secret</id>
-        <label>API Secret</label>
+        <label>API 密钥</label>
         <type>password</type>
-        <help>Authentication secret for the RESTful API. Leave blank to disable auth (NOT recommended for non-localhost binds).</help>
+        <help>RESTful API 鉴权密钥。留空将禁用鉴权（绑定到非 localhost 时不建议）。</help>
     </field>
     <field>
         <id>controller.external_ui</id>
-        <label>External UI Path</label>
+        <label>外部 UI 目录</label>
         <type>text</type>
-        <help>Directory served as the Mihomo Dashboard UI. Managed by Updates Tab — edit with care.</help>
+        <help>Mihomo Dashboard UI 所在目录。由「更新」选项卡管理，请谨慎修改。</help>
     </field>
 </form>

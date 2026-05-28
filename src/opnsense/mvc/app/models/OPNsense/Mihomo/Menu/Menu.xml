@@ -1,8 +1,8 @@
 <menu>
     <VPN>
         <Mihomo VisibleName="Mihomo" cssClass="fa fa-shield fa-fw" order="900">
-            <Dashboard VisibleName="Dashboard" order="10" url="/ui/mihomo/dashboard"/>
-            <Configuration VisibleName="Configuration" order="20" url="/ui/mihomo/configuration"/>
+            <Dashboard VisibleName="仪表盘" order="10" url="/ui/mihomo/dashboard"/>
+            <Configuration VisibleName="配置" order="20" url="/ui/mihomo/configuration"/>
         </Mihomo>
     </VPN>
 </menu>

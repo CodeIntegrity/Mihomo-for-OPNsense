@@ -14,5 +14,4 @@ use OPNsense\Base\BaseModel;
 
 class Mihomo extends BaseModel
 {
-    protected $internalDomain = 'mihomo';
 }

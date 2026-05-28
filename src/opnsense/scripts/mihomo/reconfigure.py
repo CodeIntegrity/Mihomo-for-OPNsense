@@ -325,7 +325,7 @@ def _active_profile_name(root: ET.Element) -> str:
     n = root.find("./OPNsense/Mihomo/mihomo/state/active_profile")
     if n is not None and (n.text or "").strip():
         return n.text.strip()
-    return "legacy"
+    return "default"
 
 
 def _mihomo_validate(path: str) -> tuple[bool, str]:

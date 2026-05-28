@@ -1,6 +1,6 @@
 <acl>
     <page-mihomo-dashboard>
-        <name>Mihomo: Dashboard</name>
+        <name>Mihomo：仪表盘</name>
         <patterns>
             <pattern>ui/mihomo/dashboard*</pattern>
             <pattern>api/mihomo/service/*</pattern>
@@ -11,7 +11,7 @@
         </patterns>
     </page-mihomo-dashboard>
     <page-mihomo-configuration>
-        <name>Mihomo: Configuration</name>
+        <name>Mihomo：配置</name>
         <patterns>
             <pattern>ui/mihomo/configuration*</pattern>
             <pattern>api/mihomo/settings/*</pattern>

@@ -241,19 +241,14 @@ class BackupController extends ApiControllerBase
             }
         }
         if (is_dir($stage . '/profiles')) {
-            // Replace the entire profiles directory.
-            $this->recursiveRm($this->mihomoPath('profiles'));
-            @mkdir($this->mihomoPath('profiles'), 0770, true);
-            foreach (glob($stage . '/profiles/*') ?: [] as $p) {
-                @copy($p, $this->mihomoPath('profiles/' . basename($p)));
-                @chmod($this->mihomoPath('profiles/' . basename($p)), 0660);
-            }
+            $profilesDir = $this->mihomoPath('profiles');
+            $this->recursiveRm($profilesDir);
+            $this->copyDir($stage . '/profiles', $profilesDir);
         }
     }
 
     private function applyMerge($stage)
     {
-        // Merge: backup wins for files it contains, local keeps the rest.
         foreach (['base.yaml', 'override.yaml'] as $f) {
             $src = $stage . '/' . $f;
             if (is_file($src)) {
@@ -261,9 +256,23 @@ class BackupController extends ApiControllerBase
             }
         }
         if (is_dir($stage . '/profiles')) {
-            foreach (glob($stage . '/profiles/*') ?: [] as $p) {
-                @copy($p, $this->mihomoPath('profiles/' . basename($p)));
-                @chmod($this->mihomoPath('profiles/' . basename($p)), 0660);
+            $this->copyDir($stage . '/profiles', $this->mihomoPath('profiles'));
+        }
+    }
+
+    /** Recursively copy a directory (files only — empty dirs are not preserved). */
+    private function copyDir($src, $dst)
+    {
+        if (!is_dir($dst)) {
+            @mkdir($dst, 0770, true);
+        }
+        foreach (glob($src . '/*') ?: [] as $entry) {
+            $name = basename($entry);
+            if (is_dir($entry) && !is_link($entry)) {
+                $this->copyDir($entry, $dst . '/' . $name);
+            } else {
+                @copy($entry, $dst . '/' . $name);
+                @chmod($dst . '/' . $name, 0660);
             }
         }
     }

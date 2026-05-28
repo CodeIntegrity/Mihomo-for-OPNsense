@@ -70,7 +70,7 @@ def _read_test_settings(root: ET.Element) -> tuple[str, int]:
 
 def _read_active_profile_name(root: ET.Element) -> str:
     n = root.findtext("./OPNsense/Mihomo/mihomo/state/active_profile")
-    return (n or "legacy").strip() or "legacy"
+    return (n or "default").strip() or "default"
 
 
 def _proxies_from_profile(profile_yaml_path: str, mode: str) -> list[str]:

@@ -1,9 +1,9 @@
 <form>
     <field>
         <id>subscription.enabled</id>
-        <label>Enabled</label>
+        <label>启用</label>
         <type>checkbox</type>
-        <help>Activate auto-update cron for this subscription.</help>
+        <help>为该订阅启用自动更新（cron）。</help>
         <style>selectpicker</style>
         <grid_view>
             <column>
@@ -15,9 +15,9 @@
     </field>
     <field>
         <id>subscription.name</id>
-        <label>Name</label>
+        <label>名称</label>
         <type>text</type>
-        <help>Subscription name (becomes the profile name, prefixed with sub-). Allowed: letters, digits, underscore, dash.</help>
+        <help>订阅名（同时作为配置档名，自动加上 sub- 前缀）。允许的字符：字母、数字、下划线、短横线。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -29,7 +29,7 @@
         <id>subscription.url</id>
         <label>URL</label>
         <type>text</type>
-        <help>Clash / Mihomo YAML subscription URL.</help>
+        <help>Clash / Mihomo YAML 订阅链接。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -41,7 +41,7 @@
         <id>subscription.user_agent</id>
         <label>User-Agent</label>
         <type>text</type>
-        <help>Some providers gate by User-Agent.</help>
+        <help>部分提供方根据 User-Agent 区分内容。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -51,9 +51,9 @@
     </field>
     <field>
         <id>subscription.interval</id>
-        <label>Auto-update Interval (hours)</label>
+        <label>自动更新间隔（小时）</label>
         <type>text</type>
-        <help>0 disables auto-update. Suggested: 6.</help>
+        <help>0 表示禁用自动更新。建议：6。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -63,9 +63,9 @@
     </field>
     <field>
         <id>subscription.include_keyword</id>
-        <label>Include Keywords</label>
+        <label>包含关键词</label>
         <type>text</type>
-        <help>Comma-separated. Proxy node name must contain at least one of these to be kept.</help>
+        <help>逗号分隔。代理节点名必须至少包含其中之一才会保留。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -75,9 +75,9 @@
     </field>
     <field>
         <id>subscription.exclude_keyword</id>
-        <label>Exclude Keywords</label>
+        <label>排除关键词</label>
         <type>text</type>
-        <help>Comma-separated. Proxy node names matching any of these are dropped.</help>
+        <help>逗号分隔。命中任意关键词的代理节点会被丢弃。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -87,9 +87,9 @@
     </field>
     <field>
         <id>subscription.last_update</id>
-        <label>Last Update</label>
+        <label>上次更新</label>
         <type>text</type>
-        <help>Read-only. Populated by sub.sh.</help>
+        <help>只读。由 sub.sh 写入。</help>
         <grid_view>
             <column>
                 <type>string</type>
@@ -99,9 +99,9 @@
     </field>
     <field>
         <id>subscription.last_status</id>
-        <label>Last Status</label>
+        <label>上次状态</label>
         <type>text</type>
-        <help>Read-only. idle / updating / done / failed.</help>
+        <help>只读。idle / updating / done / failed。</help>
         <grid_view>
             <column>
                 <type>string</type>

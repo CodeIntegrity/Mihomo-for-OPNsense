@@ -136,8 +136,8 @@ def active_profile_name() -> str:
     try:
         root = ET.parse(CONFIG_PATH).getroot()
     except (ET.ParseError, OSError):
-        return "legacy"
-    return (root.findtext("./OPNsense/Mihomo/mihomo/state/active_profile") or "legacy").strip() or "legacy"
+        return "default"
+    return (root.findtext("./OPNsense/Mihomo/mihomo/state/active_profile") or "default").strip() or "default"
 
 
 # ---------------------------------------------------------------------------

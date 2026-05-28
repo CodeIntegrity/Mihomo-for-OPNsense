@@ -42,6 +42,11 @@ def progress(state, step="", percent=0, message=""):
         with open(PROGRESS, "w", encoding="utf-8") as fp:
             json.dump(payload, fp, ensure_ascii=False)
         os.chmod(PROGRESS, 0o640)
+        try:
+            import grp
+            os.chown(PROGRESS, 0, grp.getgrnam("www").gr_gid)
+        except (ImportError, KeyError, PermissionError, OSError):
+            pass
     except OSError:
         pass
 

@@ -75,23 +75,23 @@
 <div class="content-box" style="padding: 16px;">
     <div class="mihomo-section-title">
         <span class="mihomo-status-light is-unknown" id="svc-light"></span>
-        {{ lang._('Service Status') }}
-        <span id="svc-text" style="font-weight:normal;color:#888;margin-left:8px;">{{ lang._('Loading...') }}</span>
+        服务状态
+        <span id="svc-text" style="font-weight:normal;color:#888;margin-left:8px;">加载中...</span>
     </div>
     <div class="row">
         <div class="col-md-8">
             <table class="table table-condensed" style="margin-bottom: 0;">
                 <tbody>
                     <tr>
-                        <td style="width: 30%;">{{ lang._('PID') }}</td>
+                        <td style="width: 30%;">PID</td>
                         <td><span id="svc-pid">—</span></td>
                     </tr>
                     <tr>
-                        <td>{{ lang._('Uptime') }}</td>
+                        <td>运行时长</td>
                         <td><span id="svc-uptime">—</span></td>
                     </tr>
                     <tr>
-                        <td>{{ lang._('Version') }}</td>
+                        <td>版本</td>
                         <td><span id="svc-version">—</span></td>
                     </tr>
                 </tbody>
@@ -99,19 +99,19 @@
         </div>
         <div class="col-md-4 text-right">
             <button type="button" class="btn btn-success" id="btn-start" disabled>
-                <i class="fa fa-play"></i> {{ lang._('Start') }}
+                <i class="fa fa-play"></i> 启动
             </button>
             <button type="button" class="btn btn-danger" id="btn-stop" disabled>
-                <i class="fa fa-stop"></i> {{ lang._('Stop') }}
+                <i class="fa fa-stop"></i> 停止
             </button>
             <button type="button" class="btn btn-warning" id="btn-restart" disabled>
-                <i class="fa fa-refresh"></i> {{ lang._('Restart') }}
+                <i class="fa fa-refresh"></i> 重启
             </button>
             <a class="btn btn-default" id="btn-open-ui" target="_blank">
-                <i class="fa fa-external-link"></i> {{ lang._('Open Dashboard UI') }}
+                <i class="fa fa-external-link"></i> 打开 Dashboard UI
             </a>
             <div id="ui-bind-hint" style="font-size:11px;color:#999;margin-top:6px;display:none;">
-                {{ lang._('Dashboard is listening on localhost — open via LAN address or allow the controller port through the firewall.') }}
+                Dashboard 监听在 localhost——请通过 LAN 地址访问，或在防火墙放行控制端口。
             </div>
         </div>
     </div>
@@ -119,23 +119,23 @@
 
 {# 2. Active Profile #}
 <div class="content-box" style="padding: 16px; margin-top: 16px;">
-    <div class="mihomo-section-title">{{ lang._('Active Profile') }}</div>
+    <div class="mihomo-section-title">当前配置</div>
     <div class="row">
         <div class="col-md-8">
             <table class="table table-condensed" style="margin-bottom: 0;">
                 <tbody>
                     <tr>
-                        <td style="width: 30%;">{{ lang._('Name') }}</td>
+                        <td style="width: 30%;">名称</td>
                         <td><strong><span id="profile-name">—</span></strong>
                             <span class="label label-default" id="profile-source" style="margin-left:6px;">—</span>
                         </td>
                     </tr>
                     <tr>
-                        <td>{{ lang._('Node Count') }}</td>
+                        <td>节点数</td>
                         <td><span id="profile-nodes">—</span></td>
                     </tr>
                     <tr>
-                        <td>{{ lang._('Last Updated') }}</td>
+                        <td>最近更新</td>
                         <td><span id="profile-last-update">—</span></td>
                     </tr>
                 </tbody>
@@ -144,54 +144,54 @@
         <div class="col-md-4 text-right">
             <div class="btn-group">
                 <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" id="btn-switch-profile">
-                    <i class="fa fa-exchange"></i> {{ lang._('Switch Profile') }} <span class="caret"></span>
+                    <i class="fa fa-exchange"></i> 切换配置 <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" id="profile-list" style="right:0;left:auto;"></ul>
             </div>
             <button type="button" class="btn btn-default" id="btn-refresh-sub">
-                <i class="fa fa-cloud-download"></i> {{ lang._('Refresh Subscription') }}
+                <i class="fa fa-cloud-download"></i> 刷新订阅
             </button>
             <button type="button" class="btn btn-default" id="btn-health-check">
-                <i class="fa fa-bolt"></i> {{ lang._('Health Check') }}
+                <i class="fa fa-bolt"></i> 健康检查
             </button>
         </div>
     </div>
     <div id="health-result" style="margin-top: 12px; display: none;">
         <div class="alert alert-info" style="margin-bottom:0;padding:8px 12px;">
             <span id="health-text"></span>
-            <button type="button" class="btn btn-xs btn-default pull-right" id="btn-clear-health">{{ lang._('Clear') }}</button>
+            <button type="button" class="btn btn-xs btn-default pull-right" id="btn-clear-health">清空</button>
         </div>
     </div>
 </div>
 
 {# 3. Realtime Metrics #}
 <div class="content-box" style="padding: 16px; margin-top: 16px;">
-    <div class="mihomo-section-title">{{ lang._('Realtime Metrics') }}</div>
+    <div class="mihomo-section-title">实时指标</div>
     <div class="row">
         <div class="col-md-3">
             <div class="mihomo-metric-card">
-                <div class="label"><i class="fa fa-arrow-up"></i> {{ lang._('Upload') }}</div>
+                <div class="label"><i class="fa fa-arrow-up"></i> 上传</div>
                 <div class="value" id="metric-up-rate">—</div>
                 <div class="label" id="metric-up-total">— total</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="mihomo-metric-card">
-                <div class="label"><i class="fa fa-arrow-down"></i> {{ lang._('Download') }}</div>
+                <div class="label"><i class="fa fa-arrow-down"></i> 下载</div>
                 <div class="value" id="metric-down-rate">—</div>
                 <div class="label" id="metric-down-total">— total</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="mihomo-metric-card">
-                <div class="label">{{ lang._('Connections') }}</div>
+                <div class="label">连接数</div>
                 <div class="value" id="metric-connections">—</div>
                 <div class="label" id="metric-connection-total">total —</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="mihomo-metric-card">
-                <div class="label">{{ lang._('Memory') }}</div>
+                <div class="label">内存</div>
                 <div class="value" id="metric-memory">—</div>
                 <div class="label">&nbsp;</div>
             </div>
@@ -202,8 +202,8 @@
 {# 4. Recent Log Tail #}
 <div class="content-box" style="padding: 16px; margin-top: 16px;">
     <div class="mihomo-section-title">
-        {{ lang._('Recent Log Tail') }}
-        <span style="font-weight:normal;color:#888;font-size:12px;">{{ lang._('(last 30 lines)') }}</span>
+        最近日志
+        <span style="font-weight:normal;color:#888;font-size:12px;">（最近 30 行）</span>
     </div>
     <textarea class="mihomo-log" id="log-tail" readonly></textarea>
 </div>
@@ -262,7 +262,7 @@
                 .catch(function(err) {
                     backoff = Math.min(backoff * 2, 10000);
                     if (onFailure) onFailure(err);
-                    showBanner('{{ lang._('Reconnecting...') }}');
+                    showBanner('重新连接中...');
                     if (!stopped) timer = setTimeout(tick, backoff);
                 });
         }
@@ -278,7 +278,7 @@
         var running = j.status === 'running';
         setLight(running ? 'running' : 'stopped');
         document.getElementById('svc-text').textContent = running
-            ? '{{ lang._('running') }}' : '{{ lang._('stopped') }}';
+            ? '运行中' : '已停止';
         document.getElementById('svc-pid').textContent = j.pid || '—';
         document.getElementById('svc-uptime').textContent = fmtUptime(j.uptime);
         document.getElementById('svc-version').textContent = j.version || '—';
@@ -345,7 +345,7 @@
         document.getElementById('btn-stop').disabled = true;
         document.getElementById('btn-restart').disabled = true;
         var prevText = document.getElementById('svc-text').textContent;
-        document.getElementById('svc-text').textContent = '{{ lang._('Please wait...') }}';
+        document.getElementById('svc-text').textContent = '请稍候...';
         fetch('/api/mihomo/service/' + action, {method: 'POST', credentials: 'same-origin',
                                                 headers: {'X-Requested-With': 'XMLHttpRequest'}})
             .then(function(r) { return r.json(); })
@@ -405,7 +405,7 @@
     document.getElementById('btn-health-check').onclick = function() {
         var btn = this; btn.disabled = true;
         document.getElementById('health-result').style.display = 'block';
-        document.getElementById('health-text').textContent = '{{ lang._('Running health check...') }}';
+        document.getElementById('health-text').textContent = '正在执行健康检查...';
         fetch('/api/mihomo/dashboard/healthCheck', {method: 'POST', credentials: 'same-origin',
                                                    headers: {'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json'},
                                                    body: JSON.stringify({mode: 'quick'})})
@@ -426,16 +426,16 @@
                                 btn.disabled = false;
                                 var r = p.result || {};
                                 document.getElementById('health-text').textContent =
-                                    '{{ lang._('Alive') }}: ' + (r.alive || 0)
-                                    + ' / {{ lang._('Dead') }}: ' + (r.dead || 0);
+                                    '存活: ' + (r.alive || 0)
+                                    + ' / 失效: ' + (r.dead || 0);
                             } else if (p.state === 'failed') {
                                 clearInterval(healthPollTimer);
                                 btn.disabled = false;
                                 document.getElementById('health-text').textContent =
-                                    '{{ lang._('Health check failed') }}: ' + (p.message || '');
+                                    '健康检查失败: ' + (p.message || '');
                             } else if (p.progress) {
                                 document.getElementById('health-text').textContent =
-                                    '{{ lang._('Testing') }} ' + p.progress.done + '/' + p.progress.total;
+                                    '测试中 ' + p.progress.done + '/' + p.progress.total;
                             }
                         });
                 }, 2000);

@@ -359,7 +359,7 @@ trait MihomoFileTrait
     {
         $cfg = Config::getInstance()->object();
         $name = (string)($cfg->OPNsense->Mihomo->mihomo->state->active_profile ?? '');
-        return $name !== '' ? $name : 'legacy';
+        return $name !== '' ? $name : 'default';
     }
 
     /**
@@ -372,18 +372,29 @@ trait MihomoFileTrait
         if (!is_dir($dir) && !@mkdir($dir, 0770, true)) {
             throw new \RuntimeException("cannot create backup dir: {$dir}");
         }
-        // Ensure profiles/ exists (tar will fail if a listed path is missing).
-        $profilesDir = $this->mihomoPath('profiles');
-        if (!is_dir($profilesDir)) {
-            @mkdir($profilesDir, 0770, true);
+        // Only archive files that actually exist — tar exits non-zero
+        // when a listed path is missing.
+        $mihomoDir = $this->mihomoPath();
+        $files = [];
+        foreach (['base.yaml', 'override.yaml'] as $f) {
+            if (is_file($mihomoDir . '/' . $f)) {
+                $files[] = $f;
+            }
+        }
+        if (is_dir($mihomoDir . '/profiles')) {
+            $files[] = 'profiles';
+        }
+        if (empty($files)) {
+            throw new \RuntimeException('nothing to backup — no base.yaml or profiles/ found');
         }
         $ts = date('Ymd-His');
         $safeLabel = preg_replace('/[^a-zA-Z0-9_-]/', '_', $label);
         $file = sprintf('%s/mihomo-%s-%s.tar.gz', $dir, $safeLabel, $ts);
         $cmd = sprintf(
-            'tar -czf %s -C %s base.yaml override.yaml profiles 2>&1',
+            'tar -czf %s -C %s %s 2>&1',
             escapeshellarg($file),
-            escapeshellarg($this->mihomoPath())
+            escapeshellarg($mihomoDir),
+            implode(' ', array_map('escapeshellarg', $files))
         );
         list($out, $rc) = $this->safeExec($cmd);
         if ($rc !== 0) {

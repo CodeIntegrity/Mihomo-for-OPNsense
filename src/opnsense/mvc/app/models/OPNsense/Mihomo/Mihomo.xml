@@ -276,10 +276,10 @@
             </subscription>
         </subscriptions>
 
-        <!-- Active profile pointer (mirrors active.json) -->
+        <!-- Active profile pointer (stored in config.xml) -->
         <state>
             <active_profile type="TextField">
-                <default>legacy</default>
+                <default>default</default>
             </active_profile>
         </state>
     </items>

@@ -152,7 +152,6 @@ init_if_missing() {
 }
 init_if_missing ./conf/base.yaml      "$CONF_DIR/mihomo/base.yaml"
 init_if_missing ./conf/override.yaml  "$CONF_DIR/mihomo/override.yaml"
-init_if_missing ./conf/active.json    "$CONF_DIR/mihomo/active.json"
 init_if_missing ./conf/config.yaml    "$CONF_DIR/mihomo/config.yaml"
 # 默认 profile：只在 profiles/ 目录为空时铺设
 if [ -z "$(ls -A "$CONF_DIR/mihomo/profiles" 2>/dev/null)" ] && [ -d ./conf/profiles ]; then
@@ -169,7 +168,6 @@ chmod 770 "$CONF_DIR/mihomo/profiles"
 chmod 770 "$CONF_DIR/mihomo/backups"
 chmod 660 "$CONF_DIR/mihomo/base.yaml" 2>/dev/null || true
 chmod 660 "$CONF_DIR/mihomo/override.yaml" 2>/dev/null || true
-chmod 660 "$CONF_DIR/mihomo/active.json" 2>/dev/null || true
 chmod 660 "$CONF_DIR/mihomo/config.yaml" 2>/dev/null || true
 chmod 660 "$CONF_DIR/mihomo/profiles/"*.yaml 2>/dev/null || true
 chmod 660 "$CONF_DIR/mihomo/profiles/"*.json 2>/dev/null || true
@@ -548,56 +546,6 @@ rm -f /var/lib/php/tmp/opnsense_menu_cache.xml
 rm -f /var/lib/php/tmp/opnsense_acl_cache.json
 log_success "菜单缓存清理完成"
 
-# 部署语言文件
-log_step "部署语言文件..."
-LANG_DEST="/usr/local/share/locale/zh_CN/LC_MESSAGES"
-LANG_PO="./lang/zh_CN/LC_MESSAGES/mihomo.po"
-LANG_MO="./lang/zh_CN/LC_MESSAGES/mihomo.mo"
-OPNSENSE_MO="$LANG_DEST/OPNsense.mo"
-if [ -f "$LANG_MO" ]; then
-	mkdir -p "$LANG_DEST"
-	run_or_die cp -f "$LANG_MO" "$LANG_DEST/mihomo.mo"
-	if [ -f "$LANG_PO" ]; then
-		if ! command -v msgunfmt >/dev/null 2>&1 || \
-		   ! command -v msgcat >/dev/null 2>&1 || \
-		   ! command -v msgfmt >/dev/null 2>&1; then
-			log_step "安装 gettext-tools 以合并 OPNsense 语言域..."
-			install_pkg_if_missing gettext-tools
-		fi
-		if command -v msgunfmt >/dev/null 2>&1 && \
-		   command -v msgcat >/dev/null 2>&1 && \
-		   command -v msgfmt >/dev/null 2>&1 && \
-		   [ -f "$OPNSENSE_MO" ]; then
-			LANG_TMP="$(mktemp -d /tmp/mihomo-lang.XXXXXX)"
-			if [ -n "$LANG_TMP" ] && \
-			   msgunfmt "$OPNSENSE_MO" > "$LANG_TMP/opnsense.po" 2>/dev/null && \
-			   msgcat --use-first "$LANG_TMP/opnsense.po" "$LANG_PO" -o "$LANG_TMP/merged.po" 2>/dev/null && \
-			   msgfmt -o "$LANG_TMP/OPNsense.mo" "$LANG_TMP/merged.po" 2>/dev/null; then
-				run_or_die cp -f "$LANG_TMP/OPNsense.mo" "$OPNSENSE_MO"
-				log_success "中文语言文件已合并到 OPNsense 默认语言域"
-			else
-				log_warn "OPNsense.mo 合并失败，已保留 mihomo.mo"
-			fi
-			[ -n "$LANG_TMP" ] && rm -rf "$LANG_TMP"
-		elif [ ! -f "$OPNSENSE_MO" ]; then
-			run_or_die cp -f "$LANG_MO" "$OPNSENSE_MO"
-			log_success "已创建 OPNsense 中文语言域"
-		else
-			log_warn "缺少 gettext 工具，无法合并 OPNsense.mo"
-		fi
-	fi
-	if killall -USR1 php-fpm >/dev/null 2>&1; then
-		log_success "php-fpm 已重新载入，gettext 缓存已刷新"
-	elif service php_fpm restart >/dev/null 2>&1; then
-		log_success "php_fpm 已重启，gettext 缓存已刷新"
-	elif configctl webgui restart >/dev/null 2>&1; then
-		log_success "Web GUI 已重启，gettext 缓存已刷新"
-	else
-		log_warn "无法自动刷新 Web GUI 缓存，请手动重启 Web GUI 后查看中文"
-	fi
-else
-	log_warn "语言文件未找到，跳过"
-fi
 
 # 重新载入configd
 log_step "重新载入 configd..."

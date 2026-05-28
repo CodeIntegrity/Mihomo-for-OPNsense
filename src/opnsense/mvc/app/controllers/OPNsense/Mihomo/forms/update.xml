@@ -1,56 +1,56 @@
 <form>
     <field>
         <id>update.github_mirror</id>
-        <label>GitHub Mirror</label>
+        <label>GitHub 镜像</label>
         <type>text</type>
-        <help>Optional URL prefix used to accelerate GitHub downloads, e.g. https://ghproxy.com/.</help>
+        <help>用于加速 GitHub 下载的可选 URL 前缀，如 https://ghproxy.com/。</help>
     </field>
     <field>
         <id>update.github_token</id>
         <label>GitHub Token</label>
         <type>password</type>
-        <help>Optional Personal Access Token used to raise GitHub API rate limits to 5000/h.</help>
+        <help>可选 Personal Access Token，用于将 GitHub API 速率限制提升到 5000/h。</help>
     </field>
     <field>
         <id>update.auto_update_geoip</id>
-        <label>Auto Update GeoIP</label>
+        <label>自动更新 GeoIP</label>
         <type>checkbox</type>
-        <help>Automatically update Country.mmdb weekly.</help>
+        <help>每周自动更新 Country.mmdb。</help>
     </field>
     <field>
         <id>update.auto_update_ui</id>
-        <label>Auto Update Dashboard UI</label>
+        <label>自动更新 Dashboard 界面</label>
         <type>checkbox</type>
-        <help>Automatically update the embedded Dashboard UI monthly.</help>
+        <help>每月自动更新内置 Dashboard 界面。</help>
     </field>
     <field>
         <id>update.auto_update_core</id>
-        <label>Auto Update Mihomo Core</label>
+        <label>自动更新 Mihomo 内核</label>
         <type>checkbox</type>
-        <help>Automatically update the Mihomo binary. NOT recommended — kernel updates can break connectivity.</help>
+        <help>自动更新 Mihomo 二进制。**不推荐**——内核更新可能导致连接中断。</help>
     </field>
     <field>
         <id>update.health_check_url</id>
-        <label>Health Check URL</label>
+        <label>健康检查 URL</label>
         <type>text</type>
-        <help>Used by the Dashboard Health Check button.</help>
+        <help>Dashboard「健康检查」按钮使用的 URL。</help>
     </field>
     <field>
         <id>update.health_check_timeout</id>
-        <label>Health Check Timeout (ms)</label>
+        <label>健康检查超时（毫秒）</label>
         <type>text</type>
-        <help>Per-node timeout for the health check.</help>
+        <help>每个节点的健康检查超时。</help>
     </field>
     <field>
         <id>update.auto_backup_on_override</id>
-        <label>Backup before Override save</label>
+        <label>保存覆写前自动备份</label>
         <type>checkbox</type>
-        <help>Auto create a backup snapshot every time Override is saved.</help>
+        <help>每次保存 Override 前自动创建一份备份快照。</help>
     </field>
     <field>
         <id>update.auto_backup_on_profile_activate</id>
-        <label>Backup before Profile activation</label>
+        <label>切换配置档前自动备份</label>
         <type>checkbox</type>
-        <help>Auto create a backup snapshot every time a Profile is activated.</help>
+        <help>每次激活配置档前自动创建一份备份快照。</help>
     </field>
 </form>
