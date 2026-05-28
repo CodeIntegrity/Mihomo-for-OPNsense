@@ -1,48 +1,48 @@
 <form>
     <field>
-        <id>tun.enable</id>
+        <id>mihomo.tun.enable</id>
         <label>启用 TUN</label>
         <type>checkbox</type>
         <help>透明代理总开关。关闭后 Mihomo 将不再劫持流量。</help>
     </field>
     <field>
-        <id>tun.stack</id>
+        <id>mihomo.tun.stack</id>
         <label>协议栈</label>
         <type>dropdown</type>
         <help>TUN 用户态网络栈。</help>
     </field>
     <field>
-        <id>tun.device</id>
+        <id>mihomo.tun.device</id>
         <label>设备名</label>
         <type>text</type>
         <help>TUN 接口名。必须与 install.sh 创建的防火墙接口同名。</help>
     </field>
     <field>
-        <id>tun.mtu</id>
+        <id>mihomo.tun.mtu</id>
         <label>MTU</label>
         <type>text</type>
         <help>TUN 接口 MTU。默认值：9000。</help>
     </field>
     <field>
-        <id>tun.auto_route</id>
+        <id>mihomo.tun.auto_route</id>
         <label>自动路由</label>
         <type>checkbox</type>
         <help>自动配置指向 TUN 设备的路由。</help>
     </field>
     <field>
-        <id>tun.strict_route</id>
+        <id>mihomo.tun.strict_route</id>
         <label>严格路由</label>
         <type>checkbox</type>
         <help>严格路由强制。</help>
     </field>
     <field>
-        <id>tun.auto_detect_interface</id>
+        <id>mihomo.tun.auto_detect_interface</id>
         <label>自动检测接口</label>
         <type>checkbox</type>
         <help>为直连连接自动检测出站接口。</help>
     </field>
     <field>
-        <id>tun.dns_hijack</id>
+        <id>mihomo.tun.dns_hijack</id>
         <label>DNS 劫持</label>
         <type>text</type>
         <help>逗号分隔的 DNS 劫持规则。默认值：any:53,tcp://any:53。</help>

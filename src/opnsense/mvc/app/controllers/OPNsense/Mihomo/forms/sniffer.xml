@@ -1,48 +1,48 @@
 <form>
     <field>
-        <id>sniffer.enable</id>
+        <id>mihomo.sniffer.enable</id>
         <label>启用</label>
         <type>checkbox</type>
         <help>启用流量嗅探，以从拦截的连接中还原目标域名。</help>
     </field>
     <field>
-        <id>sniffer.force_dns_mapping</id>
+        <id>mihomo.sniffer.force_dns_mapping</id>
         <label>强制 DNS 映射</label>
         <type>checkbox</type>
         <help>强制将目标 IP 替换为嗅探出的域名。</help>
     </field>
     <field>
-        <id>sniffer.parse_pure_ip</id>
+        <id>mihomo.sniffer.parse_pure_ip</id>
         <label>解析纯 IP</label>
         <type>checkbox</type>
         <help>即使目标没有关联域名，也运行嗅探。</help>
     </field>
     <field>
-        <id>sniffer.override_destination</id>
+        <id>mihomo.sniffer.override_destination</id>
         <label>覆盖目标</label>
         <type>checkbox</type>
         <help>使用嗅探出的域名覆盖原始目标。</help>
     </field>
     <field>
-        <id>sniffer.sniff_http_ports</id>
+        <id>mihomo.sniffer.sniff_http_ports</id>
         <label>嗅探 HTTP 端口</label>
         <type>text</type>
         <help>用于嗅探 HTTP 流量的端口或范围（逗号分隔）。</help>
     </field>
     <field>
-        <id>sniffer.sniff_tls_ports</id>
+        <id>mihomo.sniffer.sniff_tls_ports</id>
         <label>嗅探 TLS 端口</label>
         <type>text</type>
         <help>用于嗅探 TLS SNI 的端口或范围（逗号分隔）。</help>
     </field>
     <field>
-        <id>sniffer.sniff_quic_ports</id>
+        <id>mihomo.sniffer.sniff_quic_ports</id>
         <label>嗅探 QUIC 端口</label>
         <type>text</type>
         <help>用于嗅探 QUIC SNI 的端口或范围（逗号分隔）。</help>
     </field>
     <field>
-        <id>sniffer.skip_domains</id>
+        <id>mihomo.sniffer.skip_domains</id>
         <label>跳过域名</label>
         <type>text</type>
         <help>排除在嗅探之外的域名模式（逗号分隔）。</help>

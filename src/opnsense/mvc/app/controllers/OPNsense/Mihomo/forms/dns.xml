@@ -1,66 +1,66 @@
 <form>
     <field>
-        <id>dns.enable</id>
+        <id>mihomo.dns.enable</id>
         <label>启用</label>
         <type>checkbox</type>
         <help>启用 Mihomo 内置 DNS 解析。</help>
     </field>
     <field>
-        <id>dns.listen</id>
+        <id>mihomo.dns.listen</id>
         <label>监听</label>
         <type>text</type>
         <help>DNS 监听地址。默认值：0.0.0.0:53（Unbound 已被 install.sh 改到 5355）。</help>
     </field>
     <field>
-        <id>dns.ipv6</id>
+        <id>mihomo.dns.ipv6</id>
         <label>IPv6</label>
         <type>checkbox</type>
         <help>解析 AAAA 记录。</help>
     </field>
     <field>
-        <id>dns.enhanced_mode</id>
+        <id>mihomo.dns.enhanced_mode</id>
         <label>增强模式</label>
         <type>dropdown</type>
         <help>fake-ip = 为基于嗅探的路由合成应答（推荐）；redir-host = 重定向；normal = 透传。</help>
     </field>
     <field>
-        <id>dns.fake_ip_range</id>
+        <id>mihomo.dns.fake_ip_range</id>
         <label>Fake IP 范围</label>
         <type>text</type>
         <help>用于合成虚假应答的 CIDR。</help>
     </field>
     <field>
-        <id>dns.default_nameserver</id>
+        <id>mihomo.dns.default_nameserver</id>
         <label>默认上游</label>
         <type>text</type>
         <help>逗号分隔。默认值：127.0.0.1:5355（迁移后的 Unbound）。</help>
     </field>
     <field>
-        <id>dns.nameserver</id>
+        <id>mihomo.dns.nameserver</id>
         <label>上游 DNS</label>
         <type>text</type>
         <help>逗号分隔的上游解析器列表，用于常规查询。</help>
     </field>
     <field>
-        <id>dns.fallback</id>
+        <id>mihomo.dns.fallback</id>
         <label>兜底 DNS</label>
         <type>text</type>
         <help>用于境外域名兜底的解析器列表（逗号分隔）。</help>
     </field>
     <field>
-        <id>dns.fake_ip_filter</id>
+        <id>mihomo.dns.fake_ip_filter</id>
         <label>Fake IP 排除</label>
         <type>text</type>
         <help>排除在 fake-ip 处理之外的域名模式（逗号分隔）。</help>
     </field>
     <field>
-        <id>dns.use_hosts</id>
+        <id>mihomo.dns.use_hosts</id>
         <label>使用 Hosts</label>
         <type>checkbox</type>
         <help>应用下方 Hosts 表中的条目。</help>
     </field>
     <field>
-        <id>dns.hosts</id>
+        <id>mihomo.dns.hosts</id>
         <label>Hosts</label>
         <type>text</type>
         <help>静态主机条目（格式：domain=ip，每行一个）。可选。</help>

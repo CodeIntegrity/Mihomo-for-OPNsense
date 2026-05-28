@@ -407,27 +407,39 @@ $(function() {
     // ----- Tab 1: Settings -----
     var SETTINGS_API = '/api/mihomo/settings/';
     function loadSettings() {
-        mapDataToFormUI({
-            'frm_general':    SETTINGS_API + 'get',
-            'frm_controller': SETTINGS_API + 'get',
-            'frm_tun':        SETTINGS_API + 'get',
-            'frm_dns':        SETTINGS_API + 'get',
-            'frm_sniffer':    SETTINGS_API + 'get',
-            'frm_update':     SETTINGS_API + 'get'
-        }).done(function() {});
+        // Pre-populate the interface dropdown with choices so setFormData
+        // can set the saved value against valid options.
+        $.get(SETTINGS_API + 'get').done(function(data) {
+            var choices = data && data.mihomo && data.mihomo._interface_choices;
+            if (choices && choices.length) {
+                var $sel = $('[id="mihomo.general.interface_name"]');
+                $sel.empty();
+                choices.forEach(function(c) {
+                    $sel.append($('<option>', {value: c.value, text: c.label}));
+                });
+            }
+        }).always(function() {
+            mapDataToFormUI({
+                'frm_general':    SETTINGS_API + 'get',
+                'frm_controller': SETTINGS_API + 'get',
+                'frm_tun':        SETTINGS_API + 'get',
+                'frm_dns':        SETTINGS_API + 'get',
+                'frm_sniffer':    SETTINGS_API + 'get',
+                'frm_update':     SETTINGS_API + 'get'
+            }).done(function() {});
+        });
     }
     loadSettings();
 
     $('#btn-save-settings').click(function() {
         var $msg = $('#settings-save-msg');
         $msg.text('保存中...');
-        // Collect serialized fields from all sub-tab forms.
-        var parts = [];
+        // Collect form data via getFormData (OPNsense uses id-attrs, not name-attrs).
+        var allData = {};
         ['frm_general', 'frm_controller', 'frm_tun', 'frm_dns', 'frm_sniffer', 'frm_update'].forEach(function(id) {
-            var s = $('#' + id).serialize();
-            if (s) parts.push(s);
+            $.extend(true, allData, getFormData(id));
         });
-        $.post(SETTINGS_API + 'set', parts.join('&')).done(function(response) {
+        $.post(SETTINGS_API + 'set', $.param(allData)).done(function(response) {
             if (response && response.result === 'saved') {
                 $msg.text('已保存').css('color', '#5cb85c');
             } else {
@@ -781,7 +793,6 @@ $(function() {
         }).fail(function(xhr, status, err) {
             $('#backup-rows').empty().append('<tr><td colspan="4" style="color:#d9534f;">load failed: ' + (err || status) + '</td></tr>');
         });
-    }
     }
 
     // ----- Apply button -----
