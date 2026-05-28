@@ -66,41 +66,42 @@
 
     {# ---------------- Tab 1: Settings ---------------- #}
     <div id="settings" class="tab-pane fade in active mihomo-tab-content">
-        <form id="frm_settings">
-            <label class="checkbox" style="margin-bottom: 12px;">
-                <input type="checkbox" id="settings-full-help-toggle"> 显示完整帮助
-            </label>
-            <h3>常规</h3>
-            <div class="content-box">
+        <ul class="nav nav-pills" role="tablist" id="mihomo-settings-subtabs">
+            <li class="active"><a data-toggle="pill" href="#sub-general">常规</a></li>
+            <li><a data-toggle="pill" href="#sub-controller">外部控制器</a></li>
+            <li><a data-toggle="pill" href="#sub-tun">TUN</a></li>
+            <li><a data-toggle="pill" href="#sub-dns">DNS</a></li>
+            <li><a data-toggle="pill" href="#sub-sniffer">嗅探</a></li>
+            <li><a data-toggle="pill" href="#sub-update">自动更新</a></li>
+        </ul>
+
+        <div class="tab-content content-box" style="border-top: none; padding-top: 14px;">
+            <div id="sub-general" class="tab-pane fade in active">
                 {{ partial('layout_partials/base_form', {'fields': formGeneral, 'id': 'frm_general'}) }}
             </div>
-            <h3>外部控制器（API & UI）</h3>
-            <div class="content-box">
+            <div id="sub-controller" class="tab-pane fade">
                 {{ partial('layout_partials/base_form', {'fields': formController, 'id': 'frm_controller'}) }}
             </div>
-            <h3>TUN</h3>
-            <div class="content-box">
+            <div id="sub-tun" class="tab-pane fade">
                 {{ partial('layout_partials/base_form', {'fields': formTun, 'id': 'frm_tun'}) }}
             </div>
-            <h3>DNS</h3>
-            <div class="content-box">
+            <div id="sub-dns" class="tab-pane fade">
                 {{ partial('layout_partials/base_form', {'fields': formDns, 'id': 'frm_dns'}) }}
             </div>
-            <h3>嗅探</h3>
-            <div class="content-box">
+            <div id="sub-sniffer" class="tab-pane fade">
                 {{ partial('layout_partials/base_form', {'fields': formSniffer, 'id': 'frm_sniffer'}) }}
             </div>
-            <h3>自动更新</h3>
-            <div class="content-box">
+            <div id="sub-update" class="tab-pane fade">
                 {{ partial('layout_partials/base_form', {'fields': formUpdate, 'id': 'frm_update'}) }}
             </div>
-            <div style="margin-top: 16px;">
-                <button type="button" class="btn btn-primary" id="btn-save-settings">
-                    <i class="fa fa-save"></i> 保存设置
-                </button>
-                <span id="settings-save-msg" style="margin-left: 10px; color: #888;"></span>
-            </div>
-        </form>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <button type="button" class="btn btn-primary" id="btn-save-settings">
+                <i class="fa fa-save"></i> 保存设置
+            </button>
+            <span id="settings-save-msg" style="margin-left: 10px; color: #888;"></span>
+        </div>
     </div>
 
     {# ---------------- Tab 2: Subscriptions ---------------- #}
@@ -384,16 +385,6 @@ prepend-proxy-groups:
 $(function() {
     'use strict';
 
-    // Single global Full Help toggle for the entire Settings tab.
-    // Each base_form renders its own toggle — hide them all and wire one master toggle.
-    $('#settings .act_toggle_full_help').each(function () {
-        var $container = $(this).closest('label, .checkbox, .form-group');
-        if ($container.length) { $container.hide(); }
-    });
-    $('#settings-full-help-toggle').on('change', function () {
-        $('#settings .help').toggle(this.checked);
-    });
-
     // ----- Hash routing — preserve current tab across reloads -----
     var hash = window.location.hash || '#settings';
     $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
@@ -430,12 +421,20 @@ $(function() {
     $('#btn-save-settings').click(function() {
         var $msg = $('#settings-save-msg');
         $msg.text('保存中...');
-        saveFormToEndpoint('#frm_settings', SETTINGS_API + 'set', function(data) {
-            if (data && data.result === 'saved') {
+        // Collect serialized fields from all sub-tab forms.
+        var parts = [];
+        ['frm_general', 'frm_controller', 'frm_tun', 'frm_dns', 'frm_sniffer', 'frm_update'].forEach(function(id) {
+            var s = $('#' + id).serialize();
+            if (s) parts.push(s);
+        });
+        $.post(SETTINGS_API + 'set', parts.join('&')).done(function(response) {
+            if (response && response.result === 'saved') {
                 $msg.text('已保存').css('color', '#5cb85c');
             } else {
-                $msg.text((data && data.message) ? data.message : '保存失败').css('color', '#d9534f');
+                $msg.text((response && response.message) ? response.message : '保存失败').css('color', '#d9534f');
             }
+        }).fail(function() {
+            $msg.text('保存失败').css('color', '#d9534f');
         });
     });
 
