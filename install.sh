@@ -188,7 +188,9 @@ log_step "检查并安装运行依赖..."
 install_pkg_if_missing bash
 install_pkg_if_missing jq
 install_pkg_if_missing curl
-install_pkg_if_missing py311-yaml
+# py-yaml: package name depends on the default Python version (py39-yaml / py311-yaml / ...)
+PY_VER=$(python3 -c 'import sys; sys.stdout.write(str(sys.version_info.major)+str(sys.version_info.minor))' 2>/dev/null || echo "311")
+install_pkg_if_missing "py${PY_VER}-yaml"
 
 echo ""
 
