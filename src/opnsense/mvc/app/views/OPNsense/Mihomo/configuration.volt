@@ -787,15 +787,26 @@ $(function() {
                 if (j.status === 'ok') {
                     $card.find('.current').text(j.current || '—');
                     $card.find('.latest').text(j.latest || '—');
-                    var hasUpdate = j.latest && j.current && j.latest !== j.current;
+                    var isCustomUrl = j.custom_url === true;
                     var hasCurrent = j.current && j.current !== '';
+                    var hasUpdate;
+                    if (isCustomUrl) {
+                        // Custom URL — always allow update, show badge based
+                        // on whether we detected a remote version.
+                        hasUpdate = true;
+                    } else {
+                        hasUpdate = j.latest && j.current && j.latest !== j.current;
+                    }
                     $card.find('.btn-update').prop('disabled', !hasUpdate);
                     // Update badge.
                     $badge.removeClass('up-to-date has-update unknown');
                     if (!hasCurrent) {
                         $badge.addClass('unknown').text('未安装');
-                    } else if (hasUpdate) {
+                    } else if (hasUpdate && !isCustomUrl) {
                         $badge.addClass('has-update').text('有新版本');
+                    } else if (hasUpdate && isCustomUrl) {
+                        // Custom URL without remote info — mark as updateable.
+                        $badge.addClass('has-update').text('可更新');
                     } else {
                         $badge.addClass('up-to-date').text('已是最新');
                     }

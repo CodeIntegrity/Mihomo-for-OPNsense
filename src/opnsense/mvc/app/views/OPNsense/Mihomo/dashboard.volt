@@ -1,7 +1,7 @@
 {#
  # Mihomo Dashboard — landing page.
  #
- # Layout: 4 stacked content-boxes
+ # Layout: 4 stacked cards (matching configuration Update tab style)
  #   1. Service Status (state light + uptime + pid + start/stop/restart + open UI)
  #   2. Active Profile (name + nodes + last_update + switch / refresh / health check)
  #   3. Realtime Metrics (4 cards: ↑/↓ rate, conns, mem) — 2s poll
@@ -11,25 +11,57 @@
 #}
 
 <style>
-    .mihomo-section-title {
-        font-size: 16px;
+    .mihomo-card {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-top: 16px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+    .mihomo-card .card-header {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        background: #fafbfc;
+    }
+    .mihomo-card .card-header .card-icon {
+        font-size: 18px;
+        margin-right: 10px;
+        color: #666;
+        width: 24px;
+        text-align: center;
+    }
+    .mihomo-card .card-header .card-title {
+        font-size: 15px;
         font-weight: 600;
-        margin: 0 0 12px 0;
-        padding-bottom: 6px;
-        border-bottom: 1px solid #ddd;
+        flex: 1;
     }
-    .mihomo-status-light {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 6px;
-        vertical-align: middle;
-        background: #aaa;
+    .mihomo-card .card-header .card-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
     }
-    .mihomo-status-light.is-running { background: #5cb85c; box-shadow: 0 0 6px #5cb85c; }
-    .mihomo-status-light.is-stopped { background: #d9534f; }
-    .mihomo-status-light.is-unknown { background: #f0ad4e; }
+    .mihomo-card .card-header .card-badge.is-running { background: #e8f5e9; color: #2e7d32; }
+    .mihomo-card .card-header .card-badge.is-stopped { background: #fce4e4; color: #c62828; }
+    .mihomo-card .card-header .card-badge.is-unknown { background: #f5f5f5; color: #999; }
+    .mihomo-card .card-header .card-badge.tag-default { background: #e3f2fd; color: #1565c0; }
+    .mihomo-card .card-header .card-badge.tag-primary { background: #e8eaf6; color: #283593; }
+    .mihomo-card .card-body {
+        padding: 14px 16px;
+    }
+    .mihomo-card .card-actions {
+        padding: 10px 16px;
+        border-top: 1px solid #f0f0f0;
+        background: #fafbfc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mihomo-card:first-child { margin-top: 0; }
     .mihomo-metric-card {
         text-align: center;
         padding: 16px 8px;
@@ -63,6 +95,19 @@
     .mihomo-banner {
         margin-bottom: 12px;
     }
+    .mihomo-status-light {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+        background: #aaa;
+        flex-shrink: 0;
+    }
+    .mihomo-status-light.is-running { background: #5cb85c; box-shadow: 0 0 6px #5cb85c; }
+    .mihomo-status-light.is-stopped { background: #d9534f; }
+    .mihomo-status-light.is-unknown { background: #f0ad4e; }
 </style>
 
 <div class="content-box mihomo-banner" id="mihomo-status-banner" style="display:none;">
@@ -72,140 +117,154 @@
 </div>
 
 {# 1. Service Status #}
-<div class="content-box" style="padding: 16px;">
-    <div class="mihomo-section-title">
+<div class="mihomo-card">
+    <div class="card-header">
         <span class="mihomo-status-light is-unknown" id="svc-light"></span>
-        服务状态
-        <span id="svc-text" style="font-weight:normal;color:#888;margin-left:8px;">加载中...</span>
+        <span class="card-title">服务状态</span>
+        <span class="card-badge is-unknown" id="svc-badge">加载中...</span>
     </div>
-    <div class="row">
-        <div class="col-md-8">
-            <table class="table table-condensed" style="margin-bottom: 0;">
-                <tbody>
-                    <tr>
-                        <td style="width: 30%;">PID</td>
-                        <td><span id="svc-pid">—</span></td>
-                    </tr>
-                    <tr>
-                        <td>运行时长</td>
-                        <td><span id="svc-uptime">—</span></td>
-                    </tr>
-                    <tr>
-                        <td>版本</td>
-                        <td><span id="svc-version">—</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="col-md-4 text-right">
-            <button type="button" class="btn btn-success" id="btn-start" disabled>
-                <i class="fa fa-play"></i> 启动
-            </button>
-            <button type="button" class="btn btn-danger" id="btn-stop" disabled>
-                <i class="fa fa-stop"></i> 停止
-            </button>
-            <button type="button" class="btn btn-warning" id="btn-restart" disabled>
-                <i class="fa fa-refresh"></i> 重启
-            </button>
-            <a class="btn btn-default" id="btn-open-ui" target="_blank">
-                <i class="fa fa-external-link"></i> 打开 Dashboard UI
-            </a>
-            <div id="ui-bind-hint" style="font-size:11px;color:#999;margin-top:6px;display:none;">
-                Dashboard 监听在 localhost——请通过 LAN 地址访问，或在防火墙放行控制端口。
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table table-condensed" style="margin-bottom: 0;">
+                    <tbody>
+                        <tr>
+                            <td style="width: 30%;">PID</td>
+                            <td><span id="svc-pid">—</span></td>
+                        </tr>
+                        <tr>
+                            <td>运行时长</td>
+                            <td><span id="svc-uptime">—</span></td>
+                        </tr>
+                        <tr>
+                            <td>版本</td>
+                            <td><span id="svc-version">—</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-4 text-right">
+                <button type="button" class="btn btn-success" id="btn-start" disabled>
+                    <i class="fa fa-play"></i> 启动
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-stop" disabled>
+                    <i class="fa fa-stop"></i> 停止
+                </button>
+                <button type="button" class="btn btn-warning" id="btn-restart" disabled>
+                    <i class="fa fa-refresh"></i> 重启
+                </button>
+                <a class="btn btn-default" id="btn-open-ui" target="_blank">
+                    <i class="fa fa-external-link"></i> 打开 Dashboard UI
+                </a>
+                <div id="ui-bind-hint" style="font-size:11px;color:#999;margin-top:6px;display:none;">
+                    Dashboard 监听在 localhost——请通过 LAN 地址访问，或在防火墙放行控制端口。
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 {# 2. Active Profile #}
-<div class="content-box" style="padding: 16px; margin-top: 16px;">
-    <div class="mihomo-section-title">当前配置</div>
-    <div class="row">
-        <div class="col-md-8">
-            <table class="table table-condensed" style="margin-bottom: 0;">
-                <tbody>
-                    <tr>
-                        <td style="width: 30%;">名称</td>
-                        <td><strong><span id="profile-name">—</span></strong>
-                            <span class="label label-default" id="profile-source" style="margin-left:6px;">—</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>节点数</td>
-                        <td><span id="profile-nodes">—</span></td>
-                    </tr>
-                    <tr>
-                        <td>最近更新</td>
-                        <td><span id="profile-last-update">—</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="col-md-4 text-right">
-            <div class="btn-group">
-                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" id="btn-switch-profile">
-                    <i class="fa fa-exchange"></i> 切换配置 <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" id="profile-list" style="right:0;left:auto;"></ul>
-            </div>
-            <button type="button" class="btn btn-default" id="btn-refresh-sub">
-                <i class="fa fa-cloud-download"></i> 刷新订阅
-            </button>
-            <button type="button" class="btn btn-default" id="btn-health-check">
-                <i class="fa fa-bolt"></i> 健康检查
-            </button>
-        </div>
+<div class="mihomo-card">
+    <div class="card-header">
+        <span class="card-icon fa fa-file-text-o"></span>
+        <span class="card-title">当前配置</span>
+        <span class="card-badge tag-default" id="profile-source">—</span>
     </div>
-    <div id="health-result" style="margin-top: 12px; display: none;">
-        <div class="alert alert-info" style="margin-bottom:0;padding:8px 12px;">
-            <span id="health-text"></span>
-            <button type="button" class="btn btn-xs btn-default pull-right" id="btn-clear-health">清空</button>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table table-condensed" style="margin-bottom: 0;">
+                    <tbody>
+                        <tr>
+                            <td style="width: 30%;">名称</td>
+                            <td><strong><span id="profile-name">—</span></strong></td>
+                        </tr>
+                        <tr>
+                            <td>节点数</td>
+                            <td><span id="profile-nodes">—</span></td>
+                        </tr>
+                        <tr>
+                            <td>最近更新</td>
+                            <td><span id="profile-last-update">—</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-4 text-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" id="btn-switch-profile">
+                        <i class="fa fa-exchange"></i> 切换配置 <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" id="profile-list" style="right:0;left:auto;"></ul>
+                </div>
+                <button type="button" class="btn btn-default" id="btn-refresh-sub">
+                    <i class="fa fa-cloud-download"></i> 刷新订阅
+                </button>
+                <button type="button" class="btn btn-default" id="btn-health-check">
+                    <i class="fa fa-bolt"></i> 健康检查
+                </button>
+            </div>
+        </div>
+        <div id="health-result" style="margin-top: 12px; display: none;">
+            <div class="alert alert-info" style="margin-bottom:0;padding:8px 12px;">
+                <span id="health-text"></span>
+                <button type="button" class="btn btn-xs btn-default pull-right" id="btn-clear-health">清空</button>
+            </div>
         </div>
     </div>
 </div>
 
 {# 3. Realtime Metrics #}
-<div class="content-box" style="padding: 16px; margin-top: 16px;">
-    <div class="mihomo-section-title">实时指标</div>
-    <div class="row">
-        <div class="col-md-3">
-            <div class="mihomo-metric-card">
-                <div class="label"><i class="fa fa-arrow-up"></i> 上传</div>
-                <div class="value" id="metric-up-rate">—</div>
-                <div class="label" id="metric-up-total">— total</div>
+<div class="mihomo-card">
+    <div class="card-header">
+        <span class="card-icon fa fa-bar-chart"></span>
+        <span class="card-title">实时指标</span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="mihomo-metric-card">
+                    <div class="label"><i class="fa fa-arrow-up"></i> 上传</div>
+                    <div class="value" id="metric-up-rate">—</div>
+                    <div class="label" id="metric-up-total">— total</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="mihomo-metric-card">
-                <div class="label"><i class="fa fa-arrow-down"></i> 下载</div>
-                <div class="value" id="metric-down-rate">—</div>
-                <div class="label" id="metric-down-total">— total</div>
+            <div class="col-md-3">
+                <div class="mihomo-metric-card">
+                    <div class="label"><i class="fa fa-arrow-down"></i> 下载</div>
+                    <div class="value" id="metric-down-rate">—</div>
+                    <div class="label" id="metric-down-total">— total</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="mihomo-metric-card">
-                <div class="label">连接数</div>
-                <div class="value" id="metric-connections">—</div>
-                <div class="label" id="metric-connection-total">total —</div>
+            <div class="col-md-3">
+                <div class="mihomo-metric-card">
+                    <div class="label">连接数</div>
+                    <div class="value" id="metric-connections">—</div>
+                    <div class="label" id="metric-connection-total">total —</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="mihomo-metric-card">
-                <div class="label">内存</div>
-                <div class="value" id="metric-memory">—</div>
-                <div class="label">&nbsp;</div>
+            <div class="col-md-3">
+                <div class="mihomo-metric-card">
+                    <div class="label">内存</div>
+                    <div class="value" id="metric-memory">—</div>
+                    <div class="label">&nbsp;</div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 {# 4. Recent Log Tail #}
-<div class="content-box" style="padding: 16px; margin-top: 16px;">
-    <div class="mihomo-section-title">
-        最近日志
-        <span style="font-weight:normal;color:#888;font-size:12px;">（最近 30 行）</span>
+<div class="mihomo-card">
+    <div class="card-header">
+        <span class="card-icon fa fa-file-text-o"></span>
+        <span class="card-title">最近日志</span>
+        <span style="font-weight:normal;color:#999;font-size:12px;margin-left:8px;">最近 30 行</span>
     </div>
-    <textarea class="mihomo-log" id="log-tail" readonly></textarea>
+    <div class="card-body" style="padding-top:10px;">
+        <textarea class="mihomo-log" id="log-tail" readonly></textarea>
+    </div>
 </div>
 
 <script>
@@ -234,6 +293,11 @@
     function setLight(state) {
         var el = document.getElementById('svc-light');
         el.className = 'mihomo-status-light is-' + state;
+    }
+    function setSvcBadge(state, text) {
+        var el = document.getElementById('svc-badge');
+        el.className = 'card-badge is-' + state;
+        el.textContent = text;
     }
     function showBanner(text) {
         var b = document.getElementById('mihomo-status-banner');
@@ -277,8 +341,7 @@
     var statusPoller = poller('/api/mihomo/service/status', 2000, function(j) {
         var running = j.status === 'running';
         setLight(running ? 'running' : 'stopped');
-        document.getElementById('svc-text').textContent = running
-            ? '运行中' : '已停止';
+        setSvcBadge(running ? 'running' : 'stopped', running ? '运行中' : '已停止');
         document.getElementById('svc-pid').textContent = j.pid || '—';
         document.getElementById('svc-uptime').textContent = fmtUptime(j.uptime);
         document.getElementById('svc-version').textContent = j.version || '—';
@@ -293,7 +356,14 @@
             .then(function(r) { return r.json(); })
             .then(function(j) {
                 document.getElementById('profile-name').textContent = j.name || '—';
-                document.getElementById('profile-source').textContent = j.source_type || 'manual';
+                var srcEl = document.getElementById('profile-source');
+                if (j.source_type === 'subscription') {
+                    srcEl.className = 'card-badge tag-primary';
+                    srcEl.textContent = 'subscription';
+                } else {
+                    srcEl.className = 'card-badge tag-default';
+                    srcEl.textContent = 'manual';
+                }
                 document.getElementById('profile-nodes').textContent = j.node_count != null ? j.node_count : '—';
                 document.getElementById('profile-last-update').textContent = j.last_update || '—';
                 document.getElementById('btn-refresh-sub').disabled = (j.source_type !== 'subscription');
@@ -341,18 +411,18 @@
         document.getElementById('btn-start').disabled = true;
         document.getElementById('btn-stop').disabled = true;
         document.getElementById('btn-restart').disabled = true;
-        var prevText = document.getElementById('svc-text').textContent;
-        document.getElementById('svc-text').textContent = '请稍候...';
+        var prevText = document.getElementById('svc-badge').textContent;
+        setSvcBadge('unknown', '请稍候...');
         $.post('/api/mihomo/service/' + action)
             .done(function(j) {
                 if (j.status !== 'ok') {
-                    document.getElementById('svc-text').textContent = j.message || prevText;
+                    setSvcBadge('stopped', j.message || prevText);
                 }
                 // Let the 2s poller restore button states — configd type:script
                 // actions return before the rc.d script finishes.
             })
             .fail(function() {
-                document.getElementById('svc-text').textContent = prevText;
+                setSvcBadge('unknown', prevText);
             })
             .always(function() {
                 svcPending = false;

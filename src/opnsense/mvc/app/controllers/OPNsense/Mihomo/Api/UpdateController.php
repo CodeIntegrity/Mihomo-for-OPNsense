@@ -56,6 +56,14 @@ class UpdateController extends ApiControllerBase
         $variant = (string)$this->request->get('variant', null, 'zashboard');
         $force   = ((int)$this->request->get('force', null, 0)) === 1;
 
+        // GeoIP with custom URL — bypass GitHub entirely.
+        if ($resource === 'geoip') {
+            $customUrl = $this->getGeoipCustomUrl();
+            if ($customUrl !== '') {
+                return $this->checkGeoipCustomUrl($customUrl);
+            }
+        }
+
         $repo = $resource === 'ui'
             ? (self::$UI_REPOS[$variant] ?? null)
             : self::$RESOURCES[$resource];
@@ -287,5 +295,69 @@ class UpdateController extends ApiControllerBase
             return '';
         }
         return '';
+    }
+
+    /** Read geoip_url from config.xml. */
+    private function getGeoipCustomUrl()
+    {
+        try {
+            $cfg = Config::getInstance()->object();
+            return trim((string)($cfg->OPNsense->Mihomo->mihomo->update->geoip_url ?? ''));
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+
+    /**
+     * Check GeoIP update via custom URL (HEAD request for Last-Modified /
+     * Content-Length). Falls back gracefully — always enables the update
+     * button so the user can force a re-download.
+     */
+    private function checkGeoipCustomUrl($url)
+    {
+        $current = $this->detectCurrentVersion('geoip', '');
+        $latest = '';
+        $remoteDate = null;
+        $headOk = false;
+
+        // Best-effort HEAD to compare Last-Modified and Content-Length.
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY         => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 2,
+        ]);
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($httpCode >= 200 && $httpCode < 400) {
+            $headOk = true;
+            $lastMod = curl_getinfo($ch, CURLINFO_FILETIME);
+            if ($lastMod > 0) {
+                $remoteDate = date('Y-m-d', $lastMod);
+                $latest = $remoteDate;
+            }
+            $remoteSize = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+            if ($remoteSize > 0 && $remoteDate === null) {
+                $latest = $remoteSize . ' bytes';
+            }
+        }
+        curl_close($ch);
+
+        if ($latest === '') {
+            $latest = ($headOk ? 'available' : '') . ' (custom URL)';
+        }
+
+        return [
+            'status'     => 'ok',
+            'resource'   => 'geoip',
+            'variant'    => null,
+            'current'    => $current,
+            'latest'     => $latest,
+            'custom_url' => true,
+            'cached_at'  => null,
+        ];
     }
 }

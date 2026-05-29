@@ -81,6 +81,14 @@ def github_headers():
     return headers
 
 
+def geoip_custom_url():
+    """Return the custom GeoIP download URL if configured, empty string otherwise."""
+    root = _opnsense_root()
+    if root is None:
+        return ""
+    return (root.findtext("./OPNsense/Mihomo/mihomo/update/geoip_url") or "").strip()
+
+
 def github_mirror():
     root = _opnsense_root()
     if root is None:
@@ -165,6 +173,57 @@ def hot_reload_geo():
 
 
 def main():
+    custom_url = geoip_custom_url()
+
+    if custom_url:
+        # Custom URL path — download directly, skip GitHub API.
+        progress("running", step="downloading", percent=10)
+        tmp = "/tmp/mihomo-Country.mmdb.new"
+        try:
+            data = fetch(custom_url, timeout=120)
+            with open(tmp, "wb") as fp:
+                fp.write(data)
+            os.chmod(tmp, 0o640)
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+            progress("failed", message=f"download: {e}")
+            return 1
+
+        # Sanity check.
+        if os.path.getsize(tmp) < 100_000:
+            progress("failed", message="downloaded file too small (likely an error page)")
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            return 1
+
+        # Backup + atomic replace.
+        progress("running", step="installing", percent=70)
+        try:
+            if os.path.isfile(TARGET):
+                ts = time.strftime("%Y%m%d-%H%M%S")
+                shutil.copy2(TARGET, f"{TARGET}.bak.{ts}")
+            shutil.move(tmp, TARGET)
+            _chown_www(TARGET)
+            os.chmod(TARGET, 0o640)
+        except OSError as e:
+            progress("failed", message=f"install: {e}")
+            return 1
+
+        # Hot-reload.
+        progress("running", step="reloading geo", percent=90)
+        if not hot_reload_geo():
+            try:
+                subprocess.run([CONFIGCTL, "mihomo", "reconfigure"],
+                               capture_output=True, text=True, timeout=30)
+            except (subprocess.TimeoutExpired, OSError) as e:
+                progress("failed", message=f"reconfigure fallback: {e}")
+                return 1
+
+        progress("done", step="updated", percent=100, message="custom-url")
+        return 0
+
+    # Default path — GitHub release.
     progress("running", step="resolving", percent=5)
     try:
         release = get_latest_release()

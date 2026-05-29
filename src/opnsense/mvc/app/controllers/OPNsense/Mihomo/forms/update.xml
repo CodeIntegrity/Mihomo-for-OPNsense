@@ -53,4 +53,10 @@
         <type>checkbox</type>
         <help>每次激活配置档前自动创建一份备份快照。</help>
     </field>
+    <field>
+        <id>mihomo.update.geoip_url</id>
+        <label>GeoIP 数据库地址</label>
+        <type>text</type>
+        <help>可选。Country.mmdb 文件的自定义直链下载地址。留空则从 GitHub (MetaCubeX/meta-rules-dat) 获取。</help>
+    </field>
 </form>
