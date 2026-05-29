@@ -302,11 +302,6 @@ prepend-proxy-groups:
                         <td class="update-latest">—</td>
                         <td><span class="update-badge label label-default">检查中...</span></td>
                         <td>
-                            <select class="ui-variant form-control input-sm" style="display:inline-block;width:auto;height:26px;padding:1px 6px;font-size:11px;margin-right:4px;">
-                                <option value="zashboard">zashboard</option>
-                                <option value="metacubexd">metacubexd</option>
-                                <option value="yacd">yacd</option>
-                            </select>
                             <button type="button" class="btn btn-xs btn-default btn-check">
                                 <i class="fa fa-refresh"></i> 检查
                             </button>
@@ -675,7 +670,7 @@ $(function() {
     }
     function loadUpdateState($row) {
         var resource = $row.data('resource');
-        var variant = $row.find('.ui-variant').val() || undefined;
+        var variant = resource === 'ui' ? 'zashboard' : undefined;
         $.get('/api/mihomo/update/check', {resource: resource, variant: variant})
             .done(function(j) {
                 var $badge = $row.find('.update-badge');
@@ -727,15 +722,10 @@ $(function() {
         $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('检查中...');
         loadUpdateState($row);
     });
-    $('#updates').on('change', '.ui-variant', function() {
-        var $row = $(this).closest('tr');
-        $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('检查中...');
-        loadUpdateState($row);
-    });
     $('#updates').on('click', '.btn-update', function() {
         var $row = $(this).closest('tr');
         var resource = $row.data('resource');
-        var variant = $row.find('.ui-variant').val() || undefined;
+        var variant = resource === 'ui' ? 'zashboard' : undefined;
         if (!confirm('开始更新？')) return;
         currentUpdateResource = resource;
         $row.find('.btn-update, .btn-check').prop('disabled', true);
