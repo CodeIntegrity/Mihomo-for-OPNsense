@@ -16,21 +16,16 @@ No service reload needed — Mihomo serves from disk on each /ui/ request.
 Progress is written to /tmp/mihomo-update-ui.json.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import tarfile
-import tempfile
 import time
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
-import zipfile
 
 PROGRESS = "/tmp/mihomo-update-ui.json"
 UI_DIR = "/usr/local/etc/mihomo/ui"
@@ -165,6 +160,7 @@ def apply_mirror(url: str) -> str:
 def extract_archive(archive_path: str, name: str, stage_dir: str) -> None:
     nlower = name.lower()
     if nlower.endswith(".zip"):
+        import zipfile
         with zipfile.ZipFile(archive_path, "r") as zf:
             for member in zf.infolist():
                 # Reject absolute / parent-traversal paths.
@@ -173,6 +169,7 @@ def extract_archive(archive_path: str, name: str, stage_dir: str) -> None:
                     raise RuntimeError(f"unsafe zip entry: {member.filename}")
             zf.extractall(stage_dir)
     elif nlower.endswith((".tar.gz", ".tgz", ".tar.xz")):
+        import tarfile
         mode = "r:gz" if nlower.endswith((".tar.gz", ".tgz")) else "r:xz"
         with tarfile.open(archive_path, mode) as tf:
             for member in tf.getmembers():
@@ -221,7 +218,9 @@ def main(argv: list[str]) -> int:
         return 1
 
     progress("running", step=f"downloading {asset_name}", percent=25)
-    with tempfile.TemporaryDirectory(prefix="mihomo-ui-", dir="/tmp") as tmp:
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="mihomo-ui-", dir="/tmp")
+    try:
         archive_path = os.path.join(tmp, asset_name)
         try:
             data = fetch(asset_url, timeout=180)
@@ -237,7 +236,8 @@ def main(argv: list[str]) -> int:
         try:
             extract_archive(archive_path, asset_name, stage)
             dist_root = find_dist_root(stage)
-        except (RuntimeError, tarfile.TarError, zipfile.BadZipFile) as e:
+        except (RuntimeError, OSError) as e:
+            # OSError covers tarfile.TarError / zipfile.BadZipFile (lazy imports)
             progress("failed", message=f"extract: {e}")
             return 1
 
@@ -246,7 +246,7 @@ def main(argv: list[str]) -> int:
         try:
             if os.path.isdir(UI_DIR):
                 ts = time.strftime("%Y%m%d-%H%M%S")
-                os.replace(UI_DIR, f"{UI_DIR}.bak.{ts}")
+                shutil.move(UI_DIR, f"{UI_DIR}.bak.{ts}")
             shutil.copytree(dist_root, UI_DIR)
         except OSError as e:
             progress("failed", message=f"install: {e}")
@@ -263,6 +263,8 @@ def main(argv: list[str]) -> int:
                     os.chmod(os.path.join(root, f), 0o644)
         except OSError:
             pass
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
     progress("done", step=f"installed {variant}", percent=100,
              message=release.get("tag_name", ""))
@@ -270,6 +272,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    # Signal liveness immediately — the PHP side checks progress 2 s after
+    # launching us via daemon and reports "worker failed to start" if the
+    # file still carries the `starting` seed.
+    progress("running", step="init", percent=1)
     try:
         sys.exit(main(sys.argv))
     except Exception as e:  # noqa: BLE001

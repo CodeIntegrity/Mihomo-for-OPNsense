@@ -198,7 +198,7 @@ def main():
         if os.path.isfile(TARGET):
             ts = time.strftime("%Y%m%d-%H%M%S")
             shutil.copy2(TARGET, f"{TARGET}.bak.{ts}")
-        os.replace(tmp, TARGET)
+        shutil.move(tmp, TARGET)
         _chown_www(TARGET)
         os.chmod(TARGET, 0o640)
     except OSError as e:

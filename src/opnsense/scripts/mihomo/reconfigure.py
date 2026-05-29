@@ -450,7 +450,7 @@ def main() -> int:
         # Back up existing config.yaml for safety.
         if os.path.isfile(CONFIG_PATH):
             shutil.copy2(CONFIG_PATH, CONFIG_PATH + ".bak." + time.strftime("%Y%m%d_%H%M%S"))
-        os.replace(tmp_path, CONFIG_PATH)
+        shutil.move(tmp_path, CONFIG_PATH)
         try:
             os.chown(CONFIG_PATH, 0, _gid("www"))
         except (PermissionError, KeyError):

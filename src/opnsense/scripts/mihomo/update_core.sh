@@ -279,7 +279,7 @@ def main() -> int:
     try:
         if os.path.isfile(BIN_PATH):
             shutil.copy2(BIN_PATH, backup_path)
-        os.replace(new_bin, BIN_PATH)
+        shutil.move(new_bin, BIN_PATH)
         os.chmod(BIN_PATH, 0o755)
     except OSError as e:
         progress("failed", message=f"install: {e}")
