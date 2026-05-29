@@ -23,11 +23,82 @@ import json
 import os
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+
+# SSL context that tolerates MITM proxies (e.g. Mihomo fake-ip TUN).
+_SSL_CONTEXT = ssl.create_default_context()
+_SSL_CONTEXT.check_hostname = False
+_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+
+
+def _resolve_doh(hostname):
+    """Resolve a hostname via Cloudflare DoH to bypass fake-ip DNS hijack."""
+    try:
+        url = "https://1.1.1.1/dns-query?name=" + urllib.parse.quote(hostname) + "&type=A"
+        res = subprocess.run(["/usr/local/bin/curl", "-sk", "--connect-timeout", "5", "--max-time", "10",
+                              "-H", "accept: application/dns-json", url],
+                             capture_output=True, text=True, timeout=12)
+        if res.returncode != 0:
+            return None
+        data = json.loads(res.stdout)
+        for a in (data.get("Answer") or []):
+            if a.get("type") == 1:
+                return a["data"]
+    except Exception:
+        pass
+    return None
+
+
+def _download_file(url, timeout=120):
+    """Download via curl, resolving each redirect hostname through DoH."""
+    max_redirects = 5
+    for _ in range(max_redirects):
+        parsed = urllib.parse.urlparse(url)
+        hostname = parsed.hostname
+        port = str(parsed.port or (443 if parsed.scheme == "https" else 80))
+        real_ip = _resolve_doh(hostname)
+        if real_ip is None:
+            raise RuntimeError(f"cannot resolve {hostname} via DoH")
+        head_res = subprocess.run(
+            ["/usr/local/bin/curl", "-skI",
+             "--resolve", f"{hostname}:{port}:{real_ip}",
+             "--connect-timeout", str(max(5, timeout // 3)),
+             "--max-time", str(min(15, timeout)), url],
+            capture_output=True, text=True, timeout=min(20, timeout + 5))
+        if head_res.returncode != 0:
+            raise RuntimeError(f"curl HEAD returned {head_res.returncode}")
+        status_line = head_res.stdout.split("\n")[0] if head_res.stdout else ""
+        if any(f" {c} " in status_line for c in ("301", "302", "303", "307", "308")):
+            new_url = ""
+            for line in head_res.stdout.split("\n"):
+                if line.lower().startswith("location:"):
+                    new_url = line.split(":", 1)[1].strip()
+                    break
+            if new_url:
+                url = new_url
+                continue
+            raise RuntimeError("redirect without Location header")
+        curl_cmd = ["/usr/local/bin/curl", "-sk",
+                    "--resolve", f"{hostname}:{port}:{real_ip}",
+                    "--connect-timeout", str(max(5, timeout // 3)),
+                    "--max-time", str(timeout), url]
+        hdrs = github_headers()
+        for k, v in hdrs.items():
+            curl_cmd += ["-H", f"{k}: {v}"]
+        try:
+            res = subprocess.run(curl_cmd, capture_output=True, timeout=timeout + 5)
+        except (subprocess.TimeoutExpired, OSError) as e:
+            raise RuntimeError(f"curl failed: {e}")
+        if res.returncode != 0 or len(res.stdout) < 10:
+            raise RuntimeError(f"curl returned {res.returncode}, {len(res.stdout)} bytes")
+        return res.stdout
+    raise RuntimeError("too many redirects")
 
 PROGRESS = "/tmp/mihomo-update-core.json"
 RELEASE_CACHE = "/tmp/mihomo-release-cache-core.json"
@@ -91,7 +162,7 @@ def github_mirror_prefix() -> str:
 
 def fetch_url(url: str, timeout: int = 30) -> bytes:
     req = urllib.request.Request(url, headers=github_headers())
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
             raise RuntimeError(f"http {resp.status} for {url}")
         return resp.read()
@@ -228,10 +299,10 @@ def main() -> int:
     progress("running", step=f"downloading {ver}", percent=15)
     gz_path = f"/tmp/mihomo-{ver}.gz"
     try:
-        data = fetch_url(gz_url, timeout=120)
+        data = _download_file(gz_url, timeout=120)
         with open(gz_path, "wb") as fp:
             fp.write(data)
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+    except (RuntimeError, OSError) as e:
         progress("failed", message=f"download .gz: {e}")
         return 1
 
@@ -239,8 +310,8 @@ def main() -> int:
     if sha_url:
         progress("running", step="verifying SHA256", percent=40)
         try:
-            sha_blob = fetch_url(sha_url, timeout=30).decode("utf-8", errors="replace")
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+            sha_blob = _download_file(sha_url, timeout=30).decode("utf-8", errors="replace")
+        except (RuntimeError, OSError) as e:
             progress("failed", message=f"download .sha256: {e}")
             return 1
         expected = sha_blob.strip().split()[0] if sha_blob.strip() else ""

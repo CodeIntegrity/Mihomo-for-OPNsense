@@ -18,6 +18,7 @@ import http.client
 import json
 import os
 import shutil
+import ssl
 import subprocess
 import sys
 import time
@@ -25,6 +26,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+
+# SSL context that tolerates MITM proxies (e.g. Mihomo fake-ip TUN).
+_SSL_CONTEXT = ssl.create_default_context()
+_SSL_CONTEXT.check_hostname = False
+_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 PROGRESS = "/tmp/mihomo-update-geoip.json"
 RELEASE_CACHE = "/tmp/mihomo-release-cache-geoip.json"
@@ -96,9 +102,85 @@ def github_mirror():
     return (root.findtext("./OPNsense/Mihomo/mihomo/update/github_mirror") or "").strip().rstrip("/")
 
 
+def _resolve_doh(hostname):
+    """Resolve a hostname via Cloudflare DoH to bypass fake-ip DNS hijack.
+    Uses curl subprocess because Python's urllib also falls victim to fake-ip."""
+    try:
+        url = "https://1.1.1.1/dns-query?name=" + urllib.parse.quote(hostname) + "&type=A"
+        res = subprocess.run(["/usr/local/bin/curl", "-sk", "--connect-timeout", "5", "--max-time", "10",
+                              "-H", "accept: application/dns-json", url],
+                             capture_output=True, text=True, timeout=12)
+        if res.returncode != 0:
+            return None
+        data = json.loads(res.stdout)
+        for a in (data.get("Answer") or []):
+            if a.get("type") == 1:
+                return a["data"]
+    except Exception:
+        pass
+    return None
+
+
+def _download_file(url, timeout=120):
+    """Download a (potentially large) file via curl, resolving each redirect
+    hostname through DoH so CDN hops get real IPs instead of fake-ip DNS."""
+    max_redirects = 5
+    for _ in range(max_redirects):
+        parsed = urllib.parse.urlparse(url)
+        hostname = parsed.hostname
+        port = str(parsed.port or (443 if parsed.scheme == "https" else 80))
+        real_ip = _resolve_doh(hostname)
+        if real_ip is None:
+            raise RuntimeError(f"cannot resolve {hostname} via DoH")
+        # HEAD first to detect redirects.
+        head_res = subprocess.run(
+            ["/usr/local/bin/curl", "-skI",
+             "--resolve", f"{hostname}:{port}:{real_ip}",
+             "--connect-timeout", str(max(5, timeout // 3)),
+             "--max-time", str(min(15, timeout)),
+             url],
+            capture_output=True, text=True, timeout=min(20, timeout + 5))
+        if head_res.returncode != 0:
+            raise RuntimeError(f"curl HEAD returned {head_res.returncode}")
+        # Parse status line and Location.
+        status_line = head_res.stdout.split("\n")[0] if head_res.stdout else ""
+        if " 301 " in status_line or " 302 " in status_line or \
+           " 303 " in status_line or " 307 " in status_line or " 308 " in status_line:
+            # Follow redirect.
+            new_url = ""
+            for line in head_res.stdout.split("\n"):
+                if line.lower().startswith("location:"):
+                    new_url = line.split(":", 1)[1].strip()
+                    break
+            if new_url:
+                url = new_url
+                continue
+            raise RuntimeError(f"redirect without Location header")
+        if " 200 " not in status_line and " 201 " not in status_line:
+            raise RuntimeError(f"unexpected HTTP status: {status_line.strip()}")
+        # Download the body.
+        curl_cmd = ["/usr/local/bin/curl", "-sk",
+                    "--resolve", f"{hostname}:{port}:{real_ip}",
+                    "--connect-timeout", str(max(5, timeout // 3)),
+                    "--max-time", str(timeout),
+                    url]
+        hdrs = github_headers()
+        for k, v in hdrs.items():
+            curl_cmd += ["-H", f"{k}: {v}"]
+        try:
+            res = subprocess.run(curl_cmd, capture_output=True,
+                                 timeout=timeout + 5)
+        except (subprocess.TimeoutExpired, OSError) as e:
+            raise RuntimeError(f"curl failed: {e}")
+        if res.returncode != 0 or len(res.stdout) < 100:
+            raise RuntimeError(f"curl returned {res.returncode}, {len(res.stdout)} bytes")
+        return res.stdout
+    raise RuntimeError("too many redirects")
+
+
 def fetch(url, timeout=30):
     req = urllib.request.Request(url, headers=github_headers())
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
             raise RuntimeError(f"http {resp.status} for {url}")
         return resp.read()
@@ -180,11 +262,11 @@ def main():
         progress("running", step="downloading", percent=10)
         tmp = "/tmp/mihomo-Country.mmdb.new"
         try:
-            data = fetch(custom_url, timeout=120)
+            data = _download_file(custom_url, timeout=120)
             with open(tmp, "wb") as fp:
                 fp.write(data)
             os.chmod(tmp, 0o640)
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        except (RuntimeError, OSError) as e:
             progress("failed", message=f"download: {e}")
             return 1
 
@@ -235,11 +317,11 @@ def main():
     progress("running", step=f"downloading {release.get('tag_name', '')}", percent=30)
     tmp = "/tmp/mihomo-Country.mmdb.new"
     try:
-        data = fetch(url, timeout=120)
+        data = _download_file(url, timeout=120)
         with open(tmp, "wb") as fp:
             fp.write(data)
         os.chmod(tmp, 0o640)
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+    except (RuntimeError, OSError) as e:
         progress("failed", message=f"download: {e}")
         return 1
 

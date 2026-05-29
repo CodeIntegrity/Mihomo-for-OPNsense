@@ -27,6 +27,7 @@ import fcntl
 import json
 import os
 import re
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -35,6 +36,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+
+# SSL context that tolerates MITM proxies (e.g. Mihomo fake-ip TUN).
+_SSL_CONTEXT = ssl.create_default_context()
+_SSL_CONTEXT.check_hostname = False
+_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 try:
     import yaml
@@ -149,7 +155,7 @@ def download(url: str, user_agent: str, timeout: int = 30) -> bytes:
         "User-Agent": user_agent or "clash-verge/v1.7.0",
         "Accept": "*/*",
     })
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
             raise RuntimeError(f"http {resp.status}")
         return resp.read()
@@ -302,8 +308,11 @@ def main(argv: list[str]) -> int:
     log(f"filtered: {node_count} proxies", uuid)
 
     # Write tmp profile, validate via `mihomo -t -f` if possible.
+    # Temp file must live on the same filesystem as PROFILES_DIR so the
+    # final os.replace() is atomic (OPNsense /tmp may be a separate dataset).
     rendered = yaml.safe_dump(profile, allow_unicode=True, sort_keys=False)
-    fd, tmp = tempfile.mkstemp(prefix="sub-", suffix=".yaml", dir="/tmp")
+    os.makedirs(PROFILES_DIR, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".sub-", suffix=".yaml", dir=PROFILES_DIR)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fp:
             fp.write(rendered)
@@ -323,7 +332,7 @@ def main(argv: list[str]) -> int:
             with open(full_tmp, "w", encoding="utf-8") as ffp:
                 yaml.safe_dump(merged, ffp, allow_unicode=True, sort_keys=False)
             try:
-                res = subprocess.run([MIHOMO_BIN, "-t", "-f", full_tmp],
+                res = subprocess.run([MIHOMO_BIN, "-d", MIHOMO_DIR, "-t", "-f", full_tmp],
                                      capture_output=True, text=True, timeout=10)
                 if res.returncode != 0:
                     log("mihomo -t failed:\n" + (res.stdout or "") + (res.stderr or ""), uuid)
@@ -337,7 +346,6 @@ def main(argv: list[str]) -> int:
                 except OSError: pass
 
         # Commit.
-        os.makedirs(PROFILES_DIR, exist_ok=True)
         os.replace(tmp, profile_path)
         try:
             os.chown(profile_path, 0, _gid("www"))
