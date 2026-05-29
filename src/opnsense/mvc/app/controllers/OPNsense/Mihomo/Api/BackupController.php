@@ -97,6 +97,7 @@ class BackupController extends ApiControllerBase
 
         // Decrypt if needed.
         $tarFile = '/tmp/mihomo-restore-' . posix_getpid() . '.tar.gz';
+        $stage = null;
         try {
             if ($isEncrypted) {
                 if (strlen($password) < 8) {
@@ -140,6 +141,12 @@ class BackupController extends ApiControllerBase
                 $this->applyMerge($stage);
             }
             $this->recursiveRm($stage);
+        } catch (\Exception $e) {
+            @unlink($tarFile);
+            if ($stage !== null) {
+                $this->recursiveRm($stage);
+            }
+            return ['status' => 'failed', 'message' => $e->getMessage()];
         } finally {
             @unlink($tarFile);
         }

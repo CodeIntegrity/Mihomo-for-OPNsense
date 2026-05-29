@@ -320,11 +320,8 @@
             }).catch(function(){});
     }
     function activateProfile(name) {
-        fetch('/api/mihomo/profiles/activate/' + encodeURIComponent(name),
-              {method: 'POST', credentials: 'same-origin',
-               headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(function(r) { return r.json(); })
-            .then(function(j) {
+        $.post('/api/mihomo/profiles/activate/' + encodeURIComponent(name))
+            .done(function(j) {
                 if (j.status === 'ok') {
                     loadActiveProfile(); loadProfileList();
                 } else {
@@ -346,20 +343,18 @@
         document.getElementById('btn-restart').disabled = true;
         var prevText = document.getElementById('svc-text').textContent;
         document.getElementById('svc-text').textContent = '请稍候...';
-        fetch('/api/mihomo/service/' + action, {method: 'POST', credentials: 'same-origin',
-                                                headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(function(r) { return r.json(); })
-            .then(function(j) {
+        $.post('/api/mihomo/service/' + action)
+            .done(function(j) {
                 if (j.status !== 'ok') {
                     document.getElementById('svc-text').textContent = j.message || prevText;
                 }
                 // Let the 2s poller restore button states — configd type:script
                 // actions return before the rc.d script finishes.
             })
-            .catch(function() {
+            .fail(function() {
                 document.getElementById('svc-text').textContent = prevText;
             })
-            .finally(function() {
+            .always(function() {
                 svcPending = false;
             });
     }
@@ -383,10 +378,8 @@
     // ----- refresh subscription -----
     document.getElementById('btn-refresh-sub').onclick = function() {
         var btn = this; btn.disabled = true;
-        fetch('/api/mihomo/profiles/refreshActive', {method: 'POST', credentials: 'same-origin',
-                                                     headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(function(r) { return r.json(); })
-            .then(function(j) {
+        $.post('/api/mihomo/profiles/refreshActive')
+            .done(function(j) {
                 if (j.status !== 'ok') { alert(j.message || 'refresh failed'); btn.disabled = false; return; }
                 var poll = setInterval(function() {
                     fetch('/api/mihomo/profiles/active', {credentials: 'same-origin'})
@@ -406,11 +399,13 @@
         var btn = this; btn.disabled = true;
         document.getElementById('health-result').style.display = 'block';
         document.getElementById('health-text').textContent = '正在执行健康检查...';
-        fetch('/api/mihomo/dashboard/healthCheck', {method: 'POST', credentials: 'same-origin',
-                                                   headers: {'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json'},
-                                                   body: JSON.stringify({mode: 'quick'})})
-            .then(function(r) { return r.json(); })
-            .then(function(j) {
+        $.ajax({
+            url: '/api/mihomo/dashboard/healthCheck',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({mode: 'quick'})
+        })
+            .done(function(j) {
                 if (j.status !== 'ok') {
                     document.getElementById('health-text').textContent = j.message || 'failed';
                     btn.disabled = false; return;

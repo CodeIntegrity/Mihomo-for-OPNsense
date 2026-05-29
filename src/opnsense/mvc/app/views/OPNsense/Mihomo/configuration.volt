@@ -262,24 +262,12 @@ prepend-proxy-groups:
 
     {# ---------------- Tab 7: Updates ---------------- #}
     <div id="updates" class="tab-pane fade mihomo-tab-content">
-        {% for r in [{'k':'core','label':'Mihomo 内核'}, {'k':'geoip','label':'GeoIP 数据库'}, {'k':'ui','label':'Dashboard 界面'}] %}
-        <div class="mihomo-update-card" data-resource="{{ r.k }}">
-            <h4 style="margin-top:0;">{{ r.label }}</h4>
+        <div class="mihomo-update-card" data-resource="core">
+            <h4 style="margin-top:0;">Mihomo 内核</h4>
             <div class="versions">
                 <div><span class="label-text">当前:</span> <span class="current">—</span></div>
                 <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
             </div>
-            {% if r.k == 'ui' %}
-            <div style="margin: 6px 0;">
-                <label>界面变体:
-                    <select class="ui-variant">
-                        <option value="zashboard">zashboard</option>
-                        <option value="metacubexd">metacubexd</option>
-                        <option value="yacd">yacd</option>
-                    </select>
-                </label>
-            </div>
-            {% endif %}
             <button type="button" class="btn btn-default btn-check">
                 <i class="fa fa-search"></i> 检查更新
             </button>
@@ -293,7 +281,53 @@ prepend-proxy-groups:
             </div>
             <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
         </div>
-        {% endfor %}
+        <div class="mihomo-update-card" data-resource="geoip">
+            <h4 style="margin-top:0;">GeoIP 数据库</h4>
+            <div class="versions">
+                <div><span class="label-text">当前:</span> <span class="current">—</span></div>
+                <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
+            </div>
+            <button type="button" class="btn btn-default btn-check">
+                <i class="fa fa-search"></i> 检查更新
+            </button>
+            <button type="button" class="btn btn-primary btn-update" disabled>
+                <i class="fa fa-arrow-up"></i> 更新
+            </button>
+            <div class="progress" style="display:none;">
+                <div class="progress-bar progress-bar-striped active" style="width:0%;">
+                    <span class="progress-text">0%</span>
+                </div>
+            </div>
+            <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
+        </div>
+        <div class="mihomo-update-card" data-resource="ui">
+            <h4 style="margin-top:0;">Dashboard 界面</h4>
+            <div class="versions">
+                <div><span class="label-text">当前:</span> <span class="current">—</span></div>
+                <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
+            </div>
+            <div style="margin: 6px 0;">
+                <label>界面变体:
+                    <select class="ui-variant">
+                        <option value="zashboard">zashboard</option>
+                        <option value="metacubexd">metacubexd</option>
+                        <option value="yacd">yacd</option>
+                    </select>
+                </label>
+            </div>
+            <button type="button" class="btn btn-default btn-check">
+                <i class="fa fa-search"></i> 检查更新
+            </button>
+            <button type="button" class="btn btn-primary btn-update" disabled>
+                <i class="fa fa-arrow-up"></i> 更新
+            </button>
+            <div class="progress" style="display:none;">
+                <div class="progress-bar progress-bar-striped active" style="width:0%;">
+                    <span class="progress-text">0%</span>
+                </div>
+            </div>
+            <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
+        </div>
     </div>
 
     {# ---------------- Tab 8: Backup ---------------- #}
