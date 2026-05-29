@@ -351,6 +351,7 @@ def main(argv: list[str]) -> int:
             "sub_id":      uuid,
             "source_url":  sub["url"],
             "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "last_status": "done",
             "node_count":  node_count,
         }
         with open(meta_path, "w", encoding="utf-8") as fp:

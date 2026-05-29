@@ -48,8 +48,8 @@ class ProfilesController extends ApiControllerBase
             $meta = array_merge($meta, $loaded);
             $meta['name'] = $active;
         }
-        // last_status comes from the subscription record (if any).
-        if (!empty($meta['sub_id'])) {
+        // last_status: prefer meta.json (written by sub.sh), fall back to config.xml.
+        if (empty($meta['last_status']) && !empty($meta['sub_id'])) {
             $sub = $this->findSubscription($meta['sub_id']);
             if ($sub !== null) {
                 $meta['last_status'] = (string)($sub['last_status'] ?? 'idle');

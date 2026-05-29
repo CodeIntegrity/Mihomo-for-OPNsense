@@ -86,9 +86,9 @@
         height: 220px;
         font-family: monospace;
         font-size: 12px;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 1px solid #333;
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ccc;
         resize: vertical;
         box-sizing: border-box;
     }

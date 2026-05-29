@@ -85,28 +85,4 @@
             </column>
         </grid_view>
     </field>
-    <field>
-        <id>subscription.last_update</id>
-        <label>上次更新</label>
-        <type>text</type>
-        <help>只读。由 sub.sh 写入。</help>
-        <grid_view>
-            <column>
-                <type>string</type>
-                <visible>true</visible>
-            </column>
-        </grid_view>
-    </field>
-    <field>
-        <id>subscription.last_status</id>
-        <label>上次状态</label>
-        <type>text</type>
-        <help>只读。idle / updating / done / failed。</help>
-        <grid_view>
-            <column>
-                <type>string</type>
-                <visible>true</visible>
-            </column>
-        </grid_view>
-    </field>
 </form>

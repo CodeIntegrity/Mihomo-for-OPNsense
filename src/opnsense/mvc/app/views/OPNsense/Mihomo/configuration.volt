@@ -17,9 +17,9 @@
         height: 420px;
         font-family: monospace;
         font-size: 12px;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 1px solid #333;
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ccc;
         resize: vertical;
         box-sizing: border-box;
     }
@@ -30,113 +30,19 @@
         height: 360px;
         font-family: monospace;
         font-size: 12px;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 1px solid #333;
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ccc;
         resize: vertical;
         box-sizing: border-box;
     }
-    .mihomo-update-card {
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        margin-bottom: 16px;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        overflow: hidden;
-    }
-    .mihomo-update-card .card-header {
-        display: flex;
-        align-items: center;
-        padding: 14px 16px;
-        border-bottom: 1px solid #f0f0f0;
-        background: #fafbfc;
-    }
-    .mihomo-update-card .card-header .resource-icon {
-        font-size: 22px;
-        margin-right: 10px;
-        color: #666;
-        width: 28px;
-        text-align: center;
-    }
-    .mihomo-update-card .card-header .resource-name {
-        font-size: 15px;
-        font-weight: 600;
-        flex: 1;
-    }
-    .mihomo-update-card .card-header .update-badge {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 10px;
-        border-radius: 12px;
-        white-space: nowrap;
-    }
-    .mihomo-update-card .card-header .update-badge.up-to-date {
-        background: #e8f5e9;
-        color: #2e7d32;
-    }
-    .mihomo-update-card .card-header .update-badge.has-update {
-        background: #fff3e0;
-        color: #e65100;
-    }
-    .mihomo-update-card .card-header .update-badge.unknown {
-        background: #f5f5f5;
-        color: #999;
-    }
-    .mihomo-update-card .card-body {
-        padding: 14px 16px;
-    }
-    .mihomo-update-card .version-row {
-        display: flex;
-        align-items: baseline;
-        margin-bottom: 6px;
-        font-size: 13px;
-    }
-    .mihomo-update-card .version-row:last-child {
-        margin-bottom: 0;
-    }
-    .mihomo-update-card .version-row .v-label {
-        color: #888;
-        min-width: 72px;
-        flex-shrink: 0;
-    }
-    .mihomo-update-card .version-row .v-value {
-        font-weight: 500;
-        font-family: 'Courier New', monospace;
-        color: #333;
-        word-break: break-all;
-    }
-    .mihomo-update-card .version-row .v-diff {
-        margin-left: 8px;
-        font-size: 11px;
-        color: #e65100;
-    }
-    .mihomo-update-card .card-actions {
-        padding: 10px 16px;
-        border-top: 1px solid #f0f0f0;
-        background: #fafbfc;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .mihomo-update-card .card-actions .variant-select {
-        margin-right: auto;
-    }
-    .mihomo-update-card .card-actions .variant-select select {
-        font-size: 12px;
-        height: 30px;
-        padding: 2px 8px;
-    }
-    .mihomo-update-card .progress-wrap {
-        margin: 0 16px 12px;
-    }
-    .mihomo-update-card .status-msg {
-        padding: 6px 16px 12px;
-        font-size: 12px;
-        line-height: 1.4;
-    }
-    .mihomo-update-card .status-msg.is-error { color: #d9534f; }
-    .mihomo-update-card .status-msg.is-ok    { color: #5cb85c; }
-    .mihomo-update-card .status-msg.is-info  { color: #337ab7; }
+    .update-badge.is-up-to-date { background: #e8f5e9; color: #2e7d32; }
+    .update-badge.is-has-update { background: #fff3e0; color: #e65100; }
+    .update-badge.is-unknown     { background: #f5f5f5; color: #999; }
+    .update-badge.is-error       { background: #fce4e4; color: #c62828; }
+    .update-status-msg.is-error { color: #d9534f; }
+    .update-status-msg.is-ok    { color: #5cb85c; }
+    .update-status-msg.is-info  { color: #337ab7; }
 </style>
 
 <ul class="nav nav-tabs" role="tablist" id="mihomo-tabs">
@@ -350,182 +256,153 @@ prepend-proxy-groups:
 
     {# ---------------- Tab 7: Updates ---------------- #}
     <div id="updates" class="tab-pane fade mihomo-tab-content">
-        <div class="mihomo-update-card" data-resource="core">
-            <div class="card-header">
-                <span class="resource-icon fa fa-microchip"></span>
-                <span class="resource-name">Mihomo 内核</span>
-                <span class="update-badge unknown">检查中...</span>
-            </div>
-            <div class="card-body">
-                <div class="version-row">
-                    <span class="v-label">当前版本</span>
-                    <span class="v-value current">—</span>
-                </div>
-                <div class="version-row">
-                    <span class="v-label">最新版本</span>
-                    <span class="v-value latest">—</span>
-                </div>
-            </div>
-            <div class="card-actions">
-                <button type="button" class="btn btn-sm btn-default btn-check">
-                    <i class="fa fa-refresh"></i> 检查更新
-                </button>
-                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
-                    <i class="fa fa-cloud-download"></i> 更新
-                </button>
-            </div>
-            <div class="progress-wrap" style="display:none;">
-                <div class="progress" style="margin:0;">
+        <div class="content-box">
+            <table class="table table-striped table-condensed" style="margin-bottom:0;">
+                <thead>
+                    <tr>
+                        <th>资源</th>
+                        <th>当前版本</th>
+                        <th>最新版本</th>
+                        <th style="width:8em;">状态</th>
+                        <th style="width:16em;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-resource="core">
+                        <td><i class="fa fa-microchip"></i> <strong>Mihomo 内核</strong></td>
+                        <td class="update-current">—</td>
+                        <td class="update-latest">—</td>
+                        <td><span class="update-badge label label-default">检查中...</span></td>
+                        <td>
+                            <button type="button" class="btn btn-xs btn-default btn-check">
+                                <i class="fa fa-refresh"></i> 检查
+                            </button>
+                            <button type="button" class="btn btn-xs btn-primary btn-update" disabled>
+                                <i class="fa fa-cloud-download"></i> 更新
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-resource="geoip">
+                        <td><i class="fa fa-globe"></i> <strong>GeoIP 数据库</strong></td>
+                        <td class="update-current">—</td>
+                        <td class="update-latest">—</td>
+                        <td><span class="update-badge label label-default">检查中...</span></td>
+                        <td>
+                            <button type="button" class="btn btn-xs btn-default btn-check">
+                                <i class="fa fa-refresh"></i> 检查
+                            </button>
+                            <button type="button" class="btn btn-xs btn-primary btn-update" disabled>
+                                <i class="fa fa-cloud-download"></i> 更新
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-resource="ui">
+                        <td><i class="fa fa-desktop"></i> <strong>Dashboard 界面</strong></td>
+                        <td class="update-current">—</td>
+                        <td class="update-latest">—</td>
+                        <td><span class="update-badge label label-default">检查中...</span></td>
+                        <td>
+                            <select class="ui-variant form-control input-sm" style="display:inline-block;width:auto;height:26px;padding:1px 6px;font-size:11px;margin-right:4px;">
+                                <option value="zashboard">zashboard</option>
+                                <option value="metacubexd">metacubexd</option>
+                                <option value="yacd">yacd</option>
+                            </select>
+                            <button type="button" class="btn btn-xs btn-default btn-check">
+                                <i class="fa fa-refresh"></i> 检查
+                            </button>
+                            <button type="button" class="btn btn-xs btn-primary btn-update" disabled>
+                                <i class="fa fa-cloud-download"></i> 更新
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="update-progress-wrap" style="display:none;padding:8px 12px;border-top:1px solid #eee;">
+                <div class="progress" style="margin:0 0 6px 0;">
                     <div class="progress-bar progress-bar-striped active" style="width:0%;">
                         <span class="progress-text">0%</span>
                     </div>
                 </div>
+                <div class="update-status-msg" style="font-size:12px;"></div>
             </div>
-            <div class="status-msg"></div>
-        </div>
-        <div class="mihomo-update-card" data-resource="geoip">
-            <div class="card-header">
-                <span class="resource-icon fa fa-globe"></span>
-                <span class="resource-name">GeoIP 数据库</span>
-                <span class="update-badge unknown">检查中...</span>
-            </div>
-            <div class="card-body">
-                <div class="version-row">
-                    <span class="v-label">当前版本</span>
-                    <span class="v-value current">—</span>
-                </div>
-                <div class="version-row">
-                    <span class="v-label">最新版本</span>
-                    <span class="v-value latest">—</span>
-                </div>
-            </div>
-            <div class="card-actions">
-                <button type="button" class="btn btn-sm btn-default btn-check">
-                    <i class="fa fa-refresh"></i> 检查更新
-                </button>
-                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
-                    <i class="fa fa-cloud-download"></i> 更新
-                </button>
-            </div>
-            <div class="progress-wrap" style="display:none;">
-                <div class="progress" style="margin:0;">
-                    <div class="progress-bar progress-bar-striped active" style="width:0%;">
-                        <span class="progress-text">0%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="status-msg"></div>
-        </div>
-        <div class="mihomo-update-card" data-resource="ui">
-            <div class="card-header">
-                <span class="resource-icon fa fa-desktop"></span>
-                <span class="resource-name">Dashboard 界面</span>
-                <span class="update-badge unknown">检查中...</span>
-            </div>
-            <div class="card-body">
-                <div class="version-row">
-                    <span class="v-label">当前版本</span>
-                    <span class="v-value current">—</span>
-                </div>
-                <div class="version-row">
-                    <span class="v-label">最新版本</span>
-                    <span class="v-value latest">—</span>
-                </div>
-            </div>
-            <div class="card-actions">
-                <div class="variant-select">
-                    <select class="ui-variant form-control input-sm">
-                        <option value="zashboard">zashboard</option>
-                        <option value="metacubexd">metacubexd</option>
-                        <option value="yacd">yacd</option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-sm btn-default btn-check">
-                    <i class="fa fa-refresh"></i> 检查更新
-                </button>
-                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
-                    <i class="fa fa-cloud-download"></i> 更新
-                </button>
-            </div>
-            <div class="progress-wrap" style="display:none;">
-                <div class="progress" style="margin:0;">
-                    <div class="progress-bar progress-bar-striped active" style="width:0%;">
-                        <span class="progress-text">0%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="status-msg"></div>
         </div>
     </div>
 
     {# ---------------- Tab 8: Backup ---------------- #}
     <div id="backup" class="tab-pane fade mihomo-tab-content">
-        <h4>导出配置</h4>
-        <div class="alert alert-warning">
-            备份包含敏感数据（API 密钥、代理凭据），请妥善保管。
-        </div>
-        <form id="frm-export">
+        <div class="content-box">
+            <h4>导出配置</h4>
+            <div class="alert alert-warning" style="margin-top:6px;">
+                备份包含敏感数据（API 密钥、代理凭据），请妥善保管。
+            </div>
             <div class="form-group">
-                <label><input type="checkbox" id="export-encrypt"> 使用 AES-256-CBC 加密</label>
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="export-encrypt"> 使用 AES-256-CBC 加密
+                </label>
             </div>
             <div class="form-group" id="export-password-row" style="display:none;">
                 <label>密码 (≥ 8 chars):
-                    <input type="password" id="export-password" class="form-control" style="display:inline-block;width:300px;">
+                    <input type="password" id="export-password" class="form-control" style="display:inline-block;width:280px;margin-left:8px;">
                 </label>
             </div>
             <button type="button" class="btn btn-primary" id="btn-export">
                 <i class="fa fa-download"></i> 下载备份
             </button>
-        </form>
+        </div>
 
-        <hr>
-
-        <h4>导入配置</h4>
-        <form id="frm-import" enctype="multipart/form-data">
+        <div class="content-box" style="margin-top:16px;">
+            <h4>导入配置</h4>
             <div class="form-group">
+                <label>备份文件</label>
                 <input type="file" id="import-file" name="file" accept=".tar.gz,.gz,.enc">
             </div>
             <div class="form-group">
-                <label>冲突策略:</label>
-                <label style="margin-left: 10px;">
-                    <input type="radio" name="strategy" value="overwrite" checked> 全部覆盖
-                </label>
-                <label style="margin-left: 10px;">
-                    <input type="radio" name="strategy" value="merge"> 合并（保留本地额外条目）
+                <label>冲突策略</label>
+                <div>
+                    <label class="radio-inline">
+                        <input type="radio" name="strategy" value="overwrite" checked> 全部覆盖
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="strategy" value="merge"> 合并（保留本地额外条目）
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>密码（若已加密）
+                    <input type="password" id="import-password" class="form-control" style="display:inline-block;width:280px;margin-left:8px;">
                 </label>
             </div>
             <div class="form-group">
-                <label>密码（若已加密）:
-                    <input type="password" id="import-password" class="form-control" style="display:inline-block;width:300px;">
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="import-restart"> 导入后重启 mihomo
                 </label>
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="import-restart"> 导入后重启 mihomo</label>
             </div>
             <button type="button" class="btn btn-primary" id="btn-import">
                 <i class="fa fa-upload"></i> 导入备份
             </button>
             <span id="import-msg" style="margin-left:10px;color:#888;"></span>
-        </form>
+        </div>
 
-        <hr>
+        <div class="content-box" style="margin-top:16px;">
+            <h4>最近本地备份</h4>
+            <table class="table table-condensed table-hover table-striped" style="margin-top:6px;">
+                <thead>
+                    <tr>
+                        <th>文件</th>
+                        <th>大小</th>
+                        <th>修改时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="backup-rows"></tbody>
+            </table>
+        </div>
 
-        <h4>最近本地备份</h4>
-        <table class="table table-condensed table-hover table-striped">
-            <thead>
-                <tr>
-                    <th>文件</th>
-                    <th>大小</th>
-                    <th>修改时间</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="backup-rows"></tbody>
-        </table>
-
-        <h4 style="margin-top: 16px;">自动备份</h4>
-        <div style="font-size:12px;color:#888;">
-            请在「设置 → 自动更新」中配置（auto_backup_on_override / auto_backup_on_profile_activate）。
+        <div class="content-box" style="margin-top:16px;">
+            <h4>自动备份</h4>
+            <p style="font-size:12px;color:#888;margin:0;">
+                请在「设置 → 自动更新」中配置（auto_backup_on_override / auto_backup_on_profile_activate）。
+            </p>
         </div>
     </div>
 
@@ -637,12 +514,24 @@ $(function() {
     });
     $('#grid-subscriptions').on('loaded.rs.jquery.bootgrid', function() {
         $('.mihomo-sub-refresh').off('click').on('click', function() {
-            var uuid = $(this).data('row-id');
-            $(this).prop('disabled', true);
+            var $btn = $(this);
+            var uuid = $btn.data('row-id');
+            $btn.prop('disabled', true).find('span').removeClass('fa-cloud-download').addClass('fa-spinner fa-spin');
             $.ajax({
                 url: '/api/mihomo/subscriptions/refresh/' + encodeURIComponent(uuid),
                 method: 'POST'
-            }).always(function() { setTimeout(loadSubLog, 800); });
+            }).done(function(r) {
+                if (r.status !== 'ok') {
+                    alert(r.message || 'refresh failed');
+                }
+            }).fail(function() {
+                alert('refresh request failed');
+            }).always(function() {
+                setTimeout(function() {
+                    $('#grid-subscriptions').bootgrid('reload');
+                    loadSubLog();
+                }, 1500);
+            });
         });
     });
     function loadSubLog() {
@@ -775,101 +664,105 @@ $(function() {
     startLogTimer();
 
     // ----- Tab 7: Updates -----
+    var $updateProgressWrap = $('.update-progress-wrap');
+    var $updateProgressBar  = $updateProgressWrap.find('.progress-bar');
+    var $updateProgressText = $updateProgressWrap.find('.progress-text');
+    var $updateStatusMsg    = $updateProgressWrap.find('.update-status-msg');
+    var currentUpdateResource = null;
+
     function loadAllUpdateStates() {
-        $('.mihomo-update-card').each(function() { loadUpdateState($(this)); });
+        $('#updates tbody tr[data-resource]').each(function() { loadUpdateState($(this)); });
     }
-    function loadUpdateState($card) {
-        var resource = $card.data('resource');
-        var variant = $card.find('.ui-variant').val() || undefined;
+    function loadUpdateState($row) {
+        var resource = $row.data('resource');
+        var variant = $row.find('.ui-variant').val() || undefined;
         $.get('/api/mihomo/update/check', {resource: resource, variant: variant})
             .done(function(j) {
-                var $badge = $card.find('.update-badge');
+                var $badge = $row.find('.update-badge');
                 if (j.status === 'ok') {
-                    $card.find('.current').text(j.current || '—');
-                    $card.find('.latest').text(j.latest || '—');
+                    $row.find('.update-current').text(j.current || '—');
+                    $row.find('.update-latest').text(j.latest || '—');
                     var isCustomUrl = j.custom_url === true;
                     var hasCurrent = j.current && j.current !== '';
                     var hasUpdate;
                     if (isCustomUrl) {
-                        // Custom URL — always allow update, show badge based
-                        // on whether we detected a remote version.
                         hasUpdate = true;
                     } else {
                         hasUpdate = j.latest && j.current && j.latest !== j.current;
                     }
-                    $card.find('.btn-update').prop('disabled', !hasUpdate);
-                    // Update badge.
-                    $badge.removeClass('up-to-date has-update unknown');
+                    $row.find('.btn-update').prop('disabled', !hasUpdate);
+                    $badge.removeClass('is-up-to-date is-has-update is-unknown is-error');
                     if (!hasCurrent) {
-                        $badge.addClass('unknown').text('未安装');
+                        $badge.addClass('is-unknown').text('未安装');
                     } else if (hasUpdate && !isCustomUrl) {
-                        $badge.addClass('has-update').text('有新版本');
+                        $badge.addClass('is-has-update').text('有新版本');
                     } else if (hasUpdate && isCustomUrl) {
-                        // Custom URL without remote info — mark as updateable.
-                        $badge.addClass('has-update').text('可更新');
+                        $badge.addClass('is-has-update').text('可更新');
                     } else {
-                        $badge.addClass('up-to-date').text('已是最新');
+                        $badge.addClass('is-up-to-date').text('已是最新');
                     }
-                    // Clear any prior error style on status-msg.
-                    $card.find('.status-msg').removeClass('is-error is-ok is-info').text('');
                 } else {
-                    $badge.removeClass('up-to-date has-update').addClass('unknown').text('检查失败');
-                    $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
-                        .text(j.message || 'check failed');
+                    $badge.removeClass('is-up-to-date is-has-update').addClass('is-error').text('检查失败');
+                    if (currentUpdateResource === resource) {
+                        $updateStatusMsg.addClass('is-error').removeClass('is-ok is-info')
+                            .text(j.message || 'check failed');
+                    }
                 }
             })
             .fail(function(xhr, status, err) {
-                $card.find('.update-badge').removeClass('up-to-date has-update').addClass('unknown').text('检查失败');
-                $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
-                    .text('check failed: ' + (err || status));
+                $row.find('.update-badge').removeClass('is-up-to-date is-has-update').addClass('is-error').text('检查失败');
             });
         // Resume any prior in-progress update.
         $.get('/api/mihomo/update/progress', {resource: resource})
             .done(function(p) {
                 if (p && p.state === 'running') {
-                    pollUpdateProgress($card, resource);
+                    currentUpdateResource = resource;
+                    pollUpdateProgress(resource);
                 }
             })
             .fail(function() { /* progress polls are best-effort */ });
     }
-    $('.mihomo-update-card .btn-check').click(function() {
-        var $card = $(this).closest('.mihomo-update-card');
-        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('检查中...');
-        loadUpdateState($card);
+    $('#updates').on('click', '.btn-check', function() {
+        var $row = $(this).closest('tr');
+        $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('检查中...');
+        loadUpdateState($row);
     });
-    $('.mihomo-update-card .ui-variant').change(function() {
-        var $card = $(this).closest('.mihomo-update-card');
-        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('检查中...');
-        loadUpdateState($card);
+    $('#updates').on('change', '.ui-variant', function() {
+        var $row = $(this).closest('tr');
+        $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('检查中...');
+        loadUpdateState($row);
     });
-    $('.mihomo-update-card .btn-update').click(function() {
-        var $card = $(this).closest('.mihomo-update-card');
-        var resource = $card.data('resource');
-        var variant = $card.find('.ui-variant').val() || undefined;
+    $('#updates').on('click', '.btn-update', function() {
+        var $row = $(this).closest('tr');
+        var resource = $row.data('resource');
+        var variant = $row.find('.ui-variant').val() || undefined;
         if (!confirm('开始更新？')) return;
-        $card.find('.btn-update, .btn-check').prop('disabled', true);
-        $card.find('.progress-wrap').show();
-        $card.find('.status-msg').removeClass('is-error is-ok is-info').text('');
-        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('更新中...');
+        currentUpdateResource = resource;
+        $row.find('.btn-update, .btn-check').prop('disabled', true);
+        $updateProgressWrap.show();
+        $updateProgressBar.css('width', '0%');
+        $updateProgressText.text('0%');
+        $updateStatusMsg.removeClass('is-error is-ok is-info').text('');
+        $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('更新中...');
         $.post('/api/mihomo/update/run', {resource: resource, variant: variant})
             .done(function(j) {
                 if (j.status !== 'ok') {
-                    $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                    $updateStatusMsg.addClass('is-error').removeClass('is-ok is-info')
                         .text(j.message || 'failed');
-                    $card.find('.btn-update, .btn-check').prop('disabled', false);
-                    $card.find('.progress-wrap').hide();
+                    $row.find('.btn-update, .btn-check').prop('disabled', false);
+                    $updateProgressWrap.hide();
                     return;
                 }
-                pollUpdateProgress($card, resource);
+                pollUpdateProgress(resource);
             })
             .fail(function(xhr, status, err) {
-                $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                $updateStatusMsg.addClass('is-error').removeClass('is-ok is-info')
                     .text('update failed: ' + (err || status));
-                $card.find('.btn-update, .btn-check').prop('disabled', false);
-                $card.find('.progress-wrap').hide();
+                $row.find('.btn-update, .btn-check').prop('disabled', false);
+                $updateProgressWrap.hide();
             });
     });
-    function pollUpdateProgress($card, resource) {
+    function pollUpdateProgress(resource) {
         var attempts = 0;
         var poll = setInterval(function() {
             attempts++;
@@ -878,32 +771,36 @@ $(function() {
                     if (!p) return;
                     if (p.state === 'done') {
                         clearInterval(poll);
-                        $card.find('.progress-wrap').hide();
-                        $card.find('.status-msg').addClass('is-ok').removeClass('is-error is-info')
+                        $updateProgressWrap.hide();
+                        $updateStatusMsg.addClass('is-ok').removeClass('is-error is-info')
                             .text('更新完成。');
-                        $card.find('.btn-update, .btn-check').prop('disabled', false);
-                        loadUpdateState($card);
+                        currentUpdateResource = null;
+                        loadAllUpdateStates();
                     } else if (p.state === 'failed') {
                         clearInterval(poll);
-                        $card.find('.progress-wrap').hide();
-                        $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                        $updateProgressWrap.hide();
+                        $updateStatusMsg.addClass('is-error').removeClass('is-ok is-info')
                             .text(p.message || 'failed');
-                        $card.find('.btn-update, .btn-check').prop('disabled', false);
-                        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('更新失败');
+                        currentUpdateResource = null;
+                        var $row = $('#updates tbody tr[data-resource="' + resource + '"]');
+                        $row.find('.btn-update, .btn-check').prop('disabled', false);
+                        $row.find('.update-badge').removeClass('is-up-to-date is-has-update is-unknown is-error').addClass('is-unknown').text('更新失败');
                     } else {
                         var pct = p.percent != null ? p.percent : 0;
-                        $card.find('.progress-wrap').show();
-                        $card.find('.progress-bar').css('width', pct + '%');
-                        $card.find('.progress-text').text((p.step || 'working') + ' ' + pct + '%');
+                        $updateProgressWrap.show();
+                        $updateProgressBar.css('width', pct + '%');
+                        $updateProgressText.text((p.step || 'working') + ' ' + pct + '%');
                     }
                 })
                 .fail(function(xhr, status, err) {
                     if (attempts > 5) {
                         clearInterval(poll);
-                        $card.find('.progress-wrap').hide();
-                        $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                        $updateProgressWrap.hide();
+                        $updateStatusMsg.addClass('is-error').removeClass('is-ok is-info')
                             .text('progress lost: ' + (err || status));
-                        $card.find('.btn-update, .btn-check').prop('disabled', false);
+                        currentUpdateResource = null;
+                        var $row = $('#updates tbody tr[data-resource="' + resource + '"]');
+                        $row.find('.btn-update, .btn-check').prop('disabled', false);
                     }
                 });
         }, 2000);
@@ -914,13 +811,32 @@ $(function() {
         $('#export-password-row').toggle(this.checked);
     });
     $('#btn-export').click(function() {
-        // Use _blank so the download never replaces the config page.
-        var $f = $('<form>', {
-            method: 'POST', action: '/api/mihomo/backup/export', target: '_blank'
+        var fd = new FormData();
+        fd.append('encrypt', $('#export-encrypt').is(':checked') ? '1' : '0');
+        fd.append('password', $('#export-password').val() || '');
+        $.ajax({
+            url: '/api/mihomo/backup/export', method: 'POST',
+            data: fd, processData: false, contentType: false,
+            xhrFields: { responseType: 'blob' }
+        }).done(function(blob, status, xhr) {
+            var a = document.createElement('a');
+            var url = window.URL.createObjectURL(blob);
+            a.href = url;
+            var disp = xhr.getResponseHeader('Content-Disposition');
+            a.download = disp ? disp.split('filename=')[1].replace(/"/g, '') : 'mihomo-backup.tar.gz';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            loadBackupList();
+        }).fail(function(xhr) {
+            var msg = '导出失败';
+            try {
+                var r = JSON.parse(xhr.responseText);
+                msg = r.message || msg;
+            } catch(e) {}
+            alert(msg);
         });
-        $f.append($('<input>', {type:'hidden', name:'encrypt', value: $('#export-encrypt').is(':checked') ? '1':'0'}));
-        $f.append($('<input>', {type:'hidden', name:'password', value: $('#export-password').val() || ''}));
-        $f.appendTo('body').submit().remove();
     });
     $('#btn-import').click(function() {
         var file = $('#import-file')[0].files[0];
