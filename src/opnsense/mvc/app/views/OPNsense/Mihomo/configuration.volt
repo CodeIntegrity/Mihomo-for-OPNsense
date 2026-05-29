@@ -485,6 +485,29 @@ $(function() {
     });
 
     // ----- Tab 2: Subscriptions -----
+    // Event delegation on the stable tab-pane (#subscriptions) — UIBootgrid
+    // replaces #grid-subscriptions during init, so binding on it would lose
+    // the handler.  The parent tab-pane survives the swap.
+    $('#subscriptions').on('click', '.mihomo-sub-refresh', function() {
+        var $btn = $(this);
+        var uuid = $btn.data('row-id');
+        $btn.prop('disabled', true).find('span').removeClass('fa-cloud-download').addClass('fa-spinner fa-spin');
+        $.ajax({
+            url: '/api/mihomo/subscriptions/refresh/' + encodeURIComponent(uuid),
+            method: 'POST'
+        }).done(function(r) {
+            if (r.status !== 'ok') {
+                alert(r.message || 'refresh failed');
+            }
+        }).fail(function() {
+            alert('refresh request failed');
+        }).always(function() {
+            setTimeout(function() {
+                $('#grid-subscriptions').bootgrid('reload');
+                loadSubLog();
+            }, 1500);
+        });
+    });
     $('#grid-subscriptions').UIBootgrid({
         search:  '/api/mihomo/subscriptions/searchItem/',
         get:     '/api/mihomo/subscriptions/getItem/',
@@ -506,28 +529,6 @@ $(function() {
                 }
             }
         }
-    });
-    $('#grid-subscriptions').on('loaded.rs.jquery.bootgrid', function() {
-        $('.mihomo-sub-refresh').off('click').on('click', function() {
-            var $btn = $(this);
-            var uuid = $btn.data('row-id');
-            $btn.prop('disabled', true).find('span').removeClass('fa-cloud-download').addClass('fa-spinner fa-spin');
-            $.ajax({
-                url: '/api/mihomo/subscriptions/refresh/' + encodeURIComponent(uuid),
-                method: 'POST'
-            }).done(function(r) {
-                if (r.status !== 'ok') {
-                    alert(r.message || 'refresh failed');
-                }
-            }).fail(function() {
-                alert('refresh request failed');
-            }).always(function() {
-                setTimeout(function() {
-                    $('#grid-subscriptions').bootgrid('reload');
-                    loadSubLog();
-                }, 1500);
-            });
-        });
     });
     function loadSubLog() {
         $.get('/api/mihomo/subscriptions/log?lines=200').done(function(j) {
