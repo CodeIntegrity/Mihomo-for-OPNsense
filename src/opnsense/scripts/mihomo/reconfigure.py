@@ -334,7 +334,7 @@ def _mihomo_validate(path: str) -> tuple[bool, str]:
         return True, "mihomo binary not found, skipping validation"
     try:
         res = subprocess.run(
-            [MIHOMO_BIN, "-t", "-f", path],
+            [MIHOMO_BIN, "-d", MIHOMO_DIR, "-t", "-f", path],
             capture_output=True, text=True, timeout=10,
         )
     except subprocess.TimeoutExpired as e:

@@ -276,7 +276,11 @@ class UpdateController extends ApiControllerBase
             }
             $out = $this->execRead(escapeshellarg($bin) . ' -v 2>&1');
             if (preg_match('/\b(v?\d+\.\d[\d.]*)/', $out, $m)) {
-                return $m[1];
+                $ver = $m[1];
+                if ($ver[0] !== 'v') {
+                    $ver = 'v' . $ver;
+                }
+                return $ver;
             }
             return trim(strtok($out, "\n"));
         }
@@ -340,14 +344,15 @@ class UpdateController extends ApiControllerBase
                 $latest = $remoteDate;
             }
             $remoteSize = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+            // Never show raw byte count as a version string.
             if ($remoteSize > 0 && $remoteDate === null) {
-                $latest = $remoteSize . ' bytes';
+                $latest = 'custom URL';
             }
         }
         curl_close($ch);
 
         if ($latest === '') {
-            $latest = ($headOk ? 'available' : '') . ' (custom URL)';
+            $latest = $headOk ? 'custom URL' : 'unreachable';
         }
 
         return [
