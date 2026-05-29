@@ -37,18 +37,106 @@
         box-sizing: border-box;
     }
     .mihomo-update-card {
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        padding: 12px;
-        margin-bottom: 12px;
-        background: #fafafa;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 16px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        overflow: hidden;
     }
-    .mihomo-update-card .versions {
+    .mihomo-update-card .card-header {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        background: #fafbfc;
+    }
+    .mihomo-update-card .card-header .resource-icon {
+        font-size: 22px;
+        margin-right: 10px;
+        color: #666;
+        width: 28px;
+        text-align: center;
+    }
+    .mihomo-update-card .card-header .resource-name {
+        font-size: 15px;
+        font-weight: 600;
+        flex: 1;
+    }
+    .mihomo-update-card .card-header .update-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+    .mihomo-update-card .card-header .update-badge.up-to-date {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    .mihomo-update-card .card-header .update-badge.has-update {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    .mihomo-update-card .card-header .update-badge.unknown {
+        background: #f5f5f5;
+        color: #999;
+    }
+    .mihomo-update-card .card-body {
+        padding: 14px 16px;
+    }
+    .mihomo-update-card .version-row {
+        display: flex;
+        align-items: baseline;
+        margin-bottom: 6px;
         font-size: 13px;
-        margin: 6px 0;
     }
-    .mihomo-update-card .versions .label-text { color: #888; min-width: 70px; display: inline-block; }
-    .mihomo-update-card .progress { margin-top: 8px; }
+    .mihomo-update-card .version-row:last-child {
+        margin-bottom: 0;
+    }
+    .mihomo-update-card .version-row .v-label {
+        color: #888;
+        min-width: 72px;
+        flex-shrink: 0;
+    }
+    .mihomo-update-card .version-row .v-value {
+        font-weight: 500;
+        font-family: 'Courier New', monospace;
+        color: #333;
+        word-break: break-all;
+    }
+    .mihomo-update-card .version-row .v-diff {
+        margin-left: 8px;
+        font-size: 11px;
+        color: #e65100;
+    }
+    .mihomo-update-card .card-actions {
+        padding: 10px 16px;
+        border-top: 1px solid #f0f0f0;
+        background: #fafbfc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mihomo-update-card .card-actions .variant-select {
+        margin-right: auto;
+    }
+    .mihomo-update-card .card-actions .variant-select select {
+        font-size: 12px;
+        height: 30px;
+        padding: 2px 8px;
+    }
+    .mihomo-update-card .progress-wrap {
+        margin: 0 16px 12px;
+    }
+    .mihomo-update-card .status-msg {
+        padding: 6px 16px 12px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    .mihomo-update-card .status-msg.is-error { color: #d9534f; }
+    .mihomo-update-card .status-msg.is-ok    { color: #5cb85c; }
+    .mihomo-update-card .status-msg.is-info  { color: #337ab7; }
 </style>
 
 <ul class="nav nav-tabs" role="tablist" id="mihomo-tabs">
@@ -263,70 +351,110 @@ prepend-proxy-groups:
     {# ---------------- Tab 7: Updates ---------------- #}
     <div id="updates" class="tab-pane fade mihomo-tab-content">
         <div class="mihomo-update-card" data-resource="core">
-            <h4 style="margin-top:0;">Mihomo 内核</h4>
-            <div class="versions">
-                <div><span class="label-text">当前:</span> <span class="current">—</span></div>
-                <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
+            <div class="card-header">
+                <span class="resource-icon fa fa-microchip"></span>
+                <span class="resource-name">Mihomo 内核</span>
+                <span class="update-badge unknown">检查中...</span>
             </div>
-            <button type="button" class="btn btn-default btn-check">
-                <i class="fa fa-search"></i> 检查更新
-            </button>
-            <button type="button" class="btn btn-primary btn-update" disabled>
-                <i class="fa fa-arrow-up"></i> 更新
-            </button>
-            <div class="progress" style="display:none;">
-                <div class="progress-bar progress-bar-striped active" style="width:0%;">
-                    <span class="progress-text">0%</span>
+            <div class="card-body">
+                <div class="version-row">
+                    <span class="v-label">当前版本</span>
+                    <span class="v-value current">—</span>
+                </div>
+                <div class="version-row">
+                    <span class="v-label">最新版本</span>
+                    <span class="v-value latest">—</span>
                 </div>
             </div>
-            <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
+            <div class="card-actions">
+                <button type="button" class="btn btn-sm btn-default btn-check">
+                    <i class="fa fa-refresh"></i> 检查更新
+                </button>
+                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
+                    <i class="fa fa-cloud-download"></i> 更新
+                </button>
+            </div>
+            <div class="progress-wrap" style="display:none;">
+                <div class="progress" style="margin:0;">
+                    <div class="progress-bar progress-bar-striped active" style="width:0%;">
+                        <span class="progress-text">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status-msg"></div>
         </div>
         <div class="mihomo-update-card" data-resource="geoip">
-            <h4 style="margin-top:0;">GeoIP 数据库</h4>
-            <div class="versions">
-                <div><span class="label-text">当前:</span> <span class="current">—</span></div>
-                <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
+            <div class="card-header">
+                <span class="resource-icon fa fa-globe"></span>
+                <span class="resource-name">GeoIP 数据库</span>
+                <span class="update-badge unknown">检查中...</span>
             </div>
-            <button type="button" class="btn btn-default btn-check">
-                <i class="fa fa-search"></i> 检查更新
-            </button>
-            <button type="button" class="btn btn-primary btn-update" disabled>
-                <i class="fa fa-arrow-up"></i> 更新
-            </button>
-            <div class="progress" style="display:none;">
-                <div class="progress-bar progress-bar-striped active" style="width:0%;">
-                    <span class="progress-text">0%</span>
+            <div class="card-body">
+                <div class="version-row">
+                    <span class="v-label">当前版本</span>
+                    <span class="v-value current">—</span>
+                </div>
+                <div class="version-row">
+                    <span class="v-label">最新版本</span>
+                    <span class="v-value latest">—</span>
                 </div>
             </div>
-            <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
+            <div class="card-actions">
+                <button type="button" class="btn btn-sm btn-default btn-check">
+                    <i class="fa fa-refresh"></i> 检查更新
+                </button>
+                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
+                    <i class="fa fa-cloud-download"></i> 更新
+                </button>
+            </div>
+            <div class="progress-wrap" style="display:none;">
+                <div class="progress" style="margin:0;">
+                    <div class="progress-bar progress-bar-striped active" style="width:0%;">
+                        <span class="progress-text">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status-msg"></div>
         </div>
         <div class="mihomo-update-card" data-resource="ui">
-            <h4 style="margin-top:0;">Dashboard 界面</h4>
-            <div class="versions">
-                <div><span class="label-text">当前:</span> <span class="current">—</span></div>
-                <div><span class="label-text">最新:</span>  <span class="latest">—</span></div>
+            <div class="card-header">
+                <span class="resource-icon fa fa-desktop"></span>
+                <span class="resource-name">Dashboard 界面</span>
+                <span class="update-badge unknown">检查中...</span>
             </div>
-            <div style="margin: 6px 0;">
-                <label>界面变体:
-                    <select class="ui-variant">
+            <div class="card-body">
+                <div class="version-row">
+                    <span class="v-label">当前版本</span>
+                    <span class="v-value current">—</span>
+                </div>
+                <div class="version-row">
+                    <span class="v-label">最新版本</span>
+                    <span class="v-value latest">—</span>
+                </div>
+            </div>
+            <div class="card-actions">
+                <div class="variant-select">
+                    <select class="ui-variant form-control input-sm">
                         <option value="zashboard">zashboard</option>
                         <option value="metacubexd">metacubexd</option>
                         <option value="yacd">yacd</option>
                     </select>
-                </label>
+                </div>
+                <button type="button" class="btn btn-sm btn-default btn-check">
+                    <i class="fa fa-refresh"></i> 检查更新
+                </button>
+                <button type="button" class="btn btn-sm btn-primary btn-update" disabled>
+                    <i class="fa fa-cloud-download"></i> 更新
+                </button>
             </div>
-            <button type="button" class="btn btn-default btn-check">
-                <i class="fa fa-search"></i> 检查更新
-            </button>
-            <button type="button" class="btn btn-primary btn-update" disabled>
-                <i class="fa fa-arrow-up"></i> 更新
-            </button>
-            <div class="progress" style="display:none;">
-                <div class="progress-bar progress-bar-striped active" style="width:0%;">
-                    <span class="progress-text">0%</span>
+            <div class="progress-wrap" style="display:none;">
+                <div class="progress" style="margin:0;">
+                    <div class="progress-bar progress-bar-striped active" style="width:0%;">
+                        <span class="progress-text">0%</span>
+                    </div>
                 </div>
             </div>
-            <div class="status-msg" style="margin-top:6px;color:#888;font-size:12px;"></div>
+            <div class="status-msg"></div>
         </div>
     </div>
 
@@ -655,17 +783,34 @@ $(function() {
         var variant = $card.find('.ui-variant').val() || undefined;
         $.get('/api/mihomo/update/check', {resource: resource, variant: variant})
             .done(function(j) {
+                var $badge = $card.find('.update-badge');
                 if (j.status === 'ok') {
                     $card.find('.current').text(j.current || '—');
                     $card.find('.latest').text(j.latest || '—');
-                    var has = j.latest && j.current && j.latest !== j.current;
-                    $card.find('.btn-update').prop('disabled', !has && j.current !== '');
+                    var hasUpdate = j.latest && j.current && j.latest !== j.current;
+                    var hasCurrent = j.current && j.current !== '';
+                    $card.find('.btn-update').prop('disabled', !hasUpdate);
+                    // Update badge.
+                    $badge.removeClass('up-to-date has-update unknown');
+                    if (!hasCurrent) {
+                        $badge.addClass('unknown').text('未安装');
+                    } else if (hasUpdate) {
+                        $badge.addClass('has-update').text('有新版本');
+                    } else {
+                        $badge.addClass('up-to-date').text('已是最新');
+                    }
+                    // Clear any prior error style on status-msg.
+                    $card.find('.status-msg').removeClass('is-error is-ok is-info').text('');
                 } else {
-                    $card.find('.status-msg').text(j.message || 'check failed').css('color', '#d9534f');
+                    $badge.removeClass('up-to-date has-update').addClass('unknown').text('检查失败');
+                    $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                        .text(j.message || 'check failed');
                 }
             })
             .fail(function(xhr, status, err) {
-                $card.find('.status-msg').text('check failed: ' + (err || status)).css('color', '#d9534f');
+                $card.find('.update-badge').removeClass('up-to-date has-update').addClass('unknown').text('检查失败');
+                $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                    .text('check failed: ' + (err || status));
             });
         // Resume any prior in-progress update.
         $.get('/api/mihomo/update/progress', {resource: resource})
@@ -677,10 +822,14 @@ $(function() {
             .fail(function() { /* progress polls are best-effort */ });
     }
     $('.mihomo-update-card .btn-check').click(function() {
-        loadUpdateState($(this).closest('.mihomo-update-card'));
+        var $card = $(this).closest('.mihomo-update-card');
+        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('检查中...');
+        loadUpdateState($card);
     });
     $('.mihomo-update-card .ui-variant').change(function() {
-        loadUpdateState($(this).closest('.mihomo-update-card'));
+        var $card = $(this).closest('.mihomo-update-card');
+        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('检查中...');
+        loadUpdateState($card);
     });
     $('.mihomo-update-card .btn-update').click(function() {
         var $card = $(this).closest('.mihomo-update-card');
@@ -688,22 +837,25 @@ $(function() {
         var variant = $card.find('.ui-variant').val() || undefined;
         if (!confirm('开始更新？')) return;
         $card.find('.btn-update, .btn-check').prop('disabled', true);
-        $card.find('.progress').show();
-        $card.find('.status-msg').text('').css('color', '');
+        $card.find('.progress-wrap').show();
+        $card.find('.status-msg').removeClass('is-error is-ok is-info').text('');
+        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('更新中...');
         $.post('/api/mihomo/update/run', {resource: resource, variant: variant})
             .done(function(j) {
                 if (j.status !== 'ok') {
-                    $card.find('.status-msg').text(j.message || 'failed').css('color', '#d9534f');
+                    $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                        .text(j.message || 'failed');
                     $card.find('.btn-update, .btn-check').prop('disabled', false);
-                    $card.find('.progress').hide();
+                    $card.find('.progress-wrap').hide();
                     return;
                 }
                 pollUpdateProgress($card, resource);
             })
             .fail(function(xhr, status, err) {
-                $card.find('.status-msg').text('update failed: ' + (err || status)).css('color', '#d9534f');
+                $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                    .text('update failed: ' + (err || status));
                 $card.find('.btn-update, .btn-check').prop('disabled', false);
-                $card.find('.progress').hide();
+                $card.find('.progress-wrap').hide();
             });
     });
     function pollUpdateProgress($card, resource) {
@@ -715,17 +867,21 @@ $(function() {
                     if (!p) return;
                     if (p.state === 'done') {
                         clearInterval(poll);
-                        $card.find('.progress').hide();
-                        $card.find('.status-msg').text('更新完成。').css('color', '#5cb85c');
+                        $card.find('.progress-wrap').hide();
+                        $card.find('.status-msg').addClass('is-ok').removeClass('is-error is-info')
+                            .text('更新完成。');
                         $card.find('.btn-update, .btn-check').prop('disabled', false);
                         loadUpdateState($card);
                     } else if (p.state === 'failed') {
                         clearInterval(poll);
-                        $card.find('.progress').hide();
-                        $card.find('.status-msg').text(p.message || 'failed').css('color', '#d9534f');
+                        $card.find('.progress-wrap').hide();
+                        $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                            .text(p.message || 'failed');
                         $card.find('.btn-update, .btn-check').prop('disabled', false);
+                        $card.find('.update-badge').removeClass('up-to-date has-update unknown').addClass('unknown').text('更新失败');
                     } else {
                         var pct = p.percent != null ? p.percent : 0;
+                        $card.find('.progress-wrap').show();
                         $card.find('.progress-bar').css('width', pct + '%');
                         $card.find('.progress-text').text((p.step || 'working') + ' ' + pct + '%');
                     }
@@ -733,8 +889,9 @@ $(function() {
                 .fail(function(xhr, status, err) {
                     if (attempts > 5) {
                         clearInterval(poll);
-                        $card.find('.progress').hide();
-                        $card.find('.status-msg').text('progress lost: ' + (err || status)).css('color', '#d9534f');
+                        $card.find('.progress-wrap').hide();
+                        $card.find('.status-msg').addClass('is-error').removeClass('is-ok is-info')
+                            .text('progress lost: ' + (err || status));
                         $card.find('.btn-update, .btn-check').prop('disabled', false);
                     }
                 });
