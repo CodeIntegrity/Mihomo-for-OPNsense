@@ -259,6 +259,8 @@ else
       print "      <if>tun_3000</if>"
       print "      <descr>TUN</descr>"
       print "      <enable>1</enable>"
+      print "      <ipaddr>198.18.0.1</ipaddr>"
+      print "      <subnet>30</subnet>"
       print "    </" target ">"
       inserted = 1
     }
@@ -286,17 +288,17 @@ else
   # 预探测 <OPNsense> → <Firewall> → <Filter> → <rules> 路径上每一层是否存在
   # 仅在严格的父子上下文里计数，避免误匹配同名标签（例如 IPsec/Swanctl 也可能有 <rules>）
   DETECT=$(awk '
-    /<OPNsense>/        { in_opn = 1; next }
-    /<\/OPNsense>/      { in_opn = 0; next }
-    in_opn && /<OPNsense\/>/                                     { has_opn_self = 1; next }
-    in_opn && /<Firewall>/    { saw_fw = 1; in_fw = 1; next }
-    in_opn && /<Firewall\/>/                                     { has_fw_self = 1; next }
-    in_opn && /<\/Firewall>/  { in_fw = 0; next }
-    in_fw  && /<Filter>/      { saw_ft = 1; in_ft = 1; next }
-    in_fw  && /<Filter\/>/                                       { has_ft_self = 1; next }
-    in_fw  && /<\/Filter>/    { in_ft = 0; next }
-    in_ft  && /<rules>/       { saw_rules = 1; next }
-    in_ft  && /<rules\/>/                                        { has_rules_self = 1; next }
+    /<OPNsense[^>]*>/      { in_opn = 1; next }
+    /<\/OPNsense>/         { in_opn = 0; next }
+    in_opn && /<OPNsense\/>/                                        { has_opn_self = 1; next }
+    in_opn && /<Firewall[^>]*>/  { saw_fw = 1; in_fw = 1; next }
+    in_opn && /<Firewall\/>/                                        { has_fw_self = 1; next }
+    in_opn && /<\/Firewall>/    { in_fw = 0; next }
+    in_fw  && /<Filter[^>]*>/   { saw_ft = 1; in_ft = 1; next }
+    in_fw  && /<Filter\/>/                                         { has_ft_self = 1; next }
+    in_fw  && /<\/Filter>/      { in_ft = 0; next }
+    in_ft  && /<rules[^>]*>/    { saw_rules = 1; next }
+    in_ft  && /<rules\/>/                                          { has_rules_self = 1; next }
     END {
       printf "%d %d %d %d %d %d",
         (saw_fw?1:0), (saw_ft?1:0), (saw_rules?1:0),
@@ -379,7 +381,7 @@ else
     BEGIN { inserted = 0 }
     {
       # 进入 <OPNsense>
-      if ($0 ~ /<OPNsense>/) { in_opn = 1 }
+      if ($0 ~ /<OPNsense[^>]*>/) { in_opn = 1 }
 
       # 离开 <OPNsense>：若整条 Firewall 链都不存在，补全后再插入
       if ($0 ~ /<\/OPNsense>/) {
@@ -397,9 +399,9 @@ else
       }
 
       # 进入 <Firewall>
-      if (in_opn && $0 ~ /<Firewall>/) { in_fw = 1 }
+      if (in_opn && $0 ~ /<Firewall[^>]*>/) { in_fw = 1 }
 
-      # 离开 <Firewall>：若没有 <Filter>，补 Filter+rules 后插入
+      # 离开 <Firewall>：若没有 <Filter>，在 </Firewall> 之前补 Filter+rules
       if (in_opn && $0 ~ /<\/Firewall>/) {
         if (!inserted && saw_fw == 1 && saw_ft == 0) {
           print "      <Filter>"
@@ -413,9 +415,9 @@ else
       }
 
       # 进入 <Filter>
-      if (in_fw && $0 ~ /<Filter>/) { in_ft = 1 }
+      if (in_fw && $0 ~ /<Filter[^>]*>/) { in_ft = 1 }
 
-      # 离开 <Filter>：若没有 <rules>，补 rules 后插入
+      # 离开 <Filter>：若没有 <rules>，在 </Filter> 之前补 rules
       if (in_fw && $0 ~ /<\/Filter>/) {
         if (!inserted && saw_ft == 1 && saw_rules == 0) {
           print "        <rules>"
@@ -429,7 +431,7 @@ else
       print
 
       # 在已有 <rules> 之后插入新规则
-      if (in_ft && $0 ~ /<rules>/ && !inserted && saw_rules == 1) {
+      if (in_ft && $0 ~ /<rules[^>]*>/ && !inserted && saw_rules == 1) {
         emit_rule("          ")
         inserted = 1
       }
