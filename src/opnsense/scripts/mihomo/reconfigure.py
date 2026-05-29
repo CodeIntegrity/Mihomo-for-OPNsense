@@ -63,7 +63,6 @@ _SNAKE_TO_HYPHEN = {
     "log_level": "log-level",
     "tcp_concurrent": "tcp-concurrent",
     "find_process_mode": "find-process-mode",
-    "global_client_fingerprint": "global-client-fingerprint",
     "unified_delay": "unified-delay",
     "interface_name": "interface-name",
     "external_controller": "external-controller",

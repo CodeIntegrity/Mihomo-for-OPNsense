@@ -58,16 +58,6 @@
                     <always>always</always>
                 </OptionValues>
             </find_process_mode>
-            <global_client_fingerprint type="OptionField">
-                <default>chrome</default>
-                <OptionValues>
-                    <chrome>chrome</chrome>
-                    <firefox>firefox</firefox>
-                    <safari>safari</safari>
-                    <ios>ios</ios>
-                    <random>random</random>
-                </OptionValues>
-            </global_client_fingerprint>
             <unified_delay type="BooleanField">
                 <default>0</default>
             </unified_delay>

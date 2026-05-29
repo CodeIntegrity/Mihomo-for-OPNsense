@@ -60,12 +60,6 @@
         <help>PROCESS-NAME 规则使用的进程匹配模式。注意：strict 在 FreeBSD 上可能无效。</help>
     </field>
     <field>
-        <id>mihomo.general.global_client_fingerprint</id>
-        <label>全局客户端指纹</label>
-        <type>dropdown</type>
-        <help>应用于出站 TLS 握手的 uTLS 指纹。</help>
-    </field>
-    <field>
         <id>mihomo.general.unified_delay</id>
         <label>统一延迟</label>
         <type>checkbox</type>

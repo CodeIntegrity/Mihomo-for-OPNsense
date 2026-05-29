@@ -13,7 +13,6 @@ ipv6: false
 unified-delay: true
 tcp-concurrent: true
 find-process-mode: 'off'
-global-client-fingerprint: chrome
 
 external-controller: '0.0.0.0:9090'
 external-ui: /usr/local/etc/mihomo/ui
