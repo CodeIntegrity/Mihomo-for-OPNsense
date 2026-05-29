@@ -2,7 +2,11 @@
 """Subscription refresh worker — configd action `sub-refresh`.
 
 Usage:
-    sub.sh <uuid>
+    sub.sh <uuid> [activate]
+
+`activate=1` (manual refresh from the UI) makes this subscription the active
+profile after a successful download. Cron auto-update omits it so background
+refreshes never silently switch the active profile.
 
 Pipeline (mirrors design §5.4):
     1. Per-uuid flock guard (prevents concurrent refresh of same sub).
@@ -15,7 +19,8 @@ Pipeline (mirrors design §5.4):
     7. Render the new profile YAML, validate with `mihomo -t -f`.
     8. On success: rename into profiles/sub-<name>.yaml + write meta.json.
     9. Mark last_status=done + last_update in config.xml.
-    10. If active profile uses this subscription, trigger reconfigure.
+    10. Activate this profile (manual refresh) or, on the cron path, trigger
+        reconfigure only if it is already the active profile.
 
 All stdout/stderr goes to /var/log/mihomo_sub.log (prefixed with [sub=<uuid>]).
 Exit codes: 0 success, 1 fetch/parse/validate failure, 2 bad arg.
@@ -109,21 +114,19 @@ def read_subscription(uuid: str) -> dict | None:
     return out
 
 
-def update_subscription_fields(uuid: str, updates: dict) -> bool:
-    """Persist field changes back to config.xml under LOCK_EX."""
+def _edit_config(mutate) -> bool:
+    """Edit /conf/config.xml under LOCK_EX.
+
+    `mutate(root)` performs the in-place change and returns True to commit,
+    False to abort (e.g. target element missing).
+    """
     lockfp = _lock_config()
     try:
         lockfp.seek(0)
         tree = ET.parse(lockfp)
         root = tree.getroot()
-        sub = _find_subscription(root, uuid)
-        if sub is None:
+        if not mutate(root):
             return False
-        for k, v in updates.items():
-            elem = sub.find(k)
-            if elem is None:
-                elem = ET.SubElement(sub, k)
-            elem.text = str(v)
         tmp = CONFIG_PATH + ".subref.tmp"
         tree.write(tmp, encoding="utf-8", xml_declaration=True)
         try:
@@ -136,6 +139,38 @@ def update_subscription_fields(uuid: str, updates: dict) -> bool:
     finally:
         fcntl.flock(lockfp.fileno(), fcntl.LOCK_UN)
         lockfp.close()
+
+
+def update_subscription_fields(uuid: str, updates: dict) -> bool:
+    """Persist field changes back to config.xml under LOCK_EX."""
+    def mutate(root: ET.Element) -> bool:
+        sub = _find_subscription(root, uuid)
+        if sub is None:
+            return False
+        for k, v in updates.items():
+            elem = sub.find(k)
+            if elem is None:
+                elem = ET.SubElement(sub, k)
+            elem.text = str(v)
+        return True
+    return _edit_config(mutate)
+
+
+def set_active_profile(name: str) -> bool:
+    """Point state/active_profile at `name` in config.xml under LOCK_EX."""
+    def mutate(root: ET.Element) -> bool:
+        mhm = root.find("./OPNsense/Mihomo/mihomo")
+        if mhm is None:
+            return False
+        state = mhm.find("state")
+        if state is None:
+            state = ET.SubElement(mhm, "state")
+        ap = state.find("active_profile")
+        if ap is None:
+            ap = ET.SubElement(state, "active_profile")
+        ap.text = name
+        return True
+    return _edit_config(mutate)
 
 
 def active_profile_name() -> str:
@@ -230,9 +265,12 @@ def filter_proxies(profile: dict, include: list[str], exclude: list[str]) -> dic
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or not re.match(r"^[0-9a-f-]{36}$", argv[1]):
-        sys.stderr.write("usage: sub.sh <uuid>\n")
+        sys.stderr.write("usage: sub.sh <uuid> [activate]\n")
         return 2
     uuid = argv[1]
+    # activate=1 (manual refresh) makes this subscription the active profile.
+    # Cron refresh omits it, so it never silently steals the active profile.
+    activate = len(argv) > 2 and argv[2] == "1"
 
     # Per-uuid lock to avoid concurrent refresh of the same subscription.
     lock_path = f"/tmp/mihomo-sub-{uuid}.lock"
@@ -376,8 +414,18 @@ def main(argv: list[str]) -> int:
         "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     })
 
-    # Trigger reconfigure if this is the active profile.
-    if active_profile_name() == profile_name:
+    # Activate this profile when requested (manual refresh). Cron path leaves
+    # the active profile untouched and only reconfigures if it already is the
+    # active one.
+    is_active = active_profile_name() == profile_name
+    if activate and not is_active:
+        if set_active_profile(profile_name):
+            log(f"activated profile {profile_name}", uuid)
+            is_active = True
+        else:
+            log(f"failed to set active profile {profile_name}", uuid)
+
+    if is_active:
         log("active profile updated — triggering reconfigure", uuid)
         try:
             subprocess.run([CONFIGCTL, "mihomo", "reconfigure"],

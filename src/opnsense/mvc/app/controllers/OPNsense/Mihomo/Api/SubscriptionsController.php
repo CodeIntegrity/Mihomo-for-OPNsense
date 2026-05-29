@@ -53,7 +53,8 @@ class SubscriptionsController extends ApiMutableModelControllerBase
 
     /**
      * POST /api/mihomo/subscriptions/refresh/<uuid>
-     * Kick sub.sh in background. UI polls last_status via searchItem to track.
+     * Kick sub.sh in background and activate the resulting profile (arg2=1).
+     * UI polls last_status via searchItem to track.
      */
     public function refreshAction($uuid = null)
     {
@@ -64,7 +65,7 @@ class SubscriptionsController extends ApiMutableModelControllerBase
             return ['status' => 'failed', 'message' => 'invalid uuid'];
         }
         try {
-            $this->configdRun('sub-refresh', [$uuid]);
+            $this->configdRun('sub-refresh', [$uuid, '1']);
         } catch (\Exception $e) {
             return ['status' => 'failed', 'message' => $e->getMessage()];
         }
