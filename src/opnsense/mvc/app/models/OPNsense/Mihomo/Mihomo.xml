@@ -232,7 +232,7 @@
             </auto_backup_on_profile_activate>
             <geoip_url type="TextField">
                 <default></default>
-                <Mask>/^https?:\/\/.+/u</Mask>
+                <Mask>/^(|https?:\/\/.+)$/u</Mask>
                 <ValidationMessage>Must be a valid HTTP(S) URL.</ValidationMessage>
             </geoip_url>
         </update>
