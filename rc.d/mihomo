@@ -41,6 +41,17 @@ mihomo_prestart()
         echo "A mihomo process is already running; refusing to start another instance."
         return 1
     fi
+
+    # Clean up stale TUN interface from a previous run.
+    _tun_dev="tun_3000"
+    if [ -f /usr/local/etc/mihomo/config.yaml ]; then
+        _configured="$(grep -oP '(?<=device:\s)\S+' /usr/local/etc/mihomo/config.yaml 2>/dev/null | head -n 1)"
+        [ -n "${_configured}" ] && _tun_dev="${_configured}"
+    fi
+    if ifconfig "${_tun_dev}" >/dev/null 2>&1; then
+        echo "Destroying stale TUN interface: ${_tun_dev}"
+        ifconfig "${_tun_dev}" destroy 2>/dev/null || true
+    fi
 }
 
 mihomo_poststart()
@@ -124,6 +135,18 @@ mihomo_stop()
     fi
 
     rm -f "${pidfile}"
+
+    # Clean up stale TUN interface left by mihomo.
+    # The device name is read from the running config; fall back to tun_3000.
+    _tun_dev="tun_3000"
+    if [ -f /usr/local/etc/mihomo/config.yaml ]; then
+        _configured="$(grep -oP '(?<=device:\s)\S+' /usr/local/etc/mihomo/config.yaml 2>/dev/null | head -n 1)"
+        [ -n "${_configured}" ] && _tun_dev="${_configured}"
+    fi
+    if ifconfig "${_tun_dev}" >/dev/null 2>&1; then
+        echo "Destroying stale TUN interface: ${_tun_dev}"
+        ifconfig "${_tun_dev}" destroy 2>/dev/null || true
+    fi
 
     if pgrep -f "/usr/local/bin/mihomo -d /usr/local/etc/mihomo/" >/dev/null 2>&1; then
         echo "${name} could not be stopped completely."

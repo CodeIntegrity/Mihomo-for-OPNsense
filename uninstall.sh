@@ -54,6 +54,19 @@ else
     log_warn "mihomo 服务停止失败或服务不存在，跳过"
 fi
 
+# Destroy TUN interface in the kernel (service stop may not clean it up).
+_tun_dev="tun_3000"
+if [ -f /usr/local/etc/mihomo/config.yaml ]; then
+    _configured="$(grep -oP '(?<=device:\s)\S+' /usr/local/etc/mihomo/config.yaml 2>/dev/null | head -n 1)"
+    [ -n "${_configured}" ] && _tun_dev="${_configured}"
+fi
+if ifconfig "${_tun_dev}" >/dev/null 2>&1; then
+    ifconfig "${_tun_dev}" destroy 2>/dev/null || true
+    log_success "TUN 接口 ${_tun_dev} 已销毁"
+else
+    log_warn "未找到活跃的 TUN 接口 ${_tun_dev}，跳过"
+fi
+
 echo ""
 
 # 询问是否保留用户数据
@@ -133,8 +146,10 @@ log_success "配置已备份到 $BACKUP_FILE"
 
 echo ""
 
-log_step "删除 tun_3000 接口..."
-TARGET_IF_BLOCK=$(awk '
+log_step "删除 TUN 接口配置..."
+# Use the same device name detected above; fall back to tun_3000.
+_tun_if="${_tun_dev}"
+TARGET_IF_BLOCK=$(awk -v tun_if="$_tun_if" '
 BEGIN {
   in_block = 0
   current = ""
@@ -149,7 +164,7 @@ BEGIN {
     in_block = 1
   }
 
-  if (in_block && $0 ~ /<if>tun_3000<\/if>/) {
+  if (in_block && $0 ~ ("<if>" tun_if "</if>")) {
     found = current
   }
 
@@ -183,7 +198,7 @@ if [ -n "$TARGET_IF_BLOCK" ]; then
   ' "$CONFIG_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONFIG_FILE"
   log_success "${TARGET_IF_BLOCK} 接口块删除完成"
 else
-  log_warn "未找到 tun_3000 对应的接口块，跳过"
+  log_warn "未找到 ${_tun_if} 对应的接口块，跳过"
 fi
 
 echo ""
