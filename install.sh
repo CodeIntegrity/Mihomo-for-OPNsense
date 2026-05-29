@@ -188,6 +188,7 @@ log_step "检查并安装运行依赖..."
 install_pkg_if_missing bash
 install_pkg_if_missing jq
 install_pkg_if_missing curl
+install_pkg_if_missing py311-yaml
 
 echo ""
 
