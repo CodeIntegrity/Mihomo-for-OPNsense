@@ -267,8 +267,8 @@ class UpdateController extends ApiControllerBase
                 return '';
             }
             $out = $this->execRead(escapeshellarg($bin) . ' -v 2>&1');
-            if (preg_match('/v[\d.]+/', $out, $m)) {
-                return $m[0];
+            if (preg_match('/\b(v?\d+\.\d[\d.]*)/', $out, $m)) {
+                return $m[1];
             }
             return trim(strtok($out, "\n"));
         }
