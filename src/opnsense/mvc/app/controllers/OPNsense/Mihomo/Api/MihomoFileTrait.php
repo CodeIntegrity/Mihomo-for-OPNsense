@@ -376,16 +376,17 @@ trait MihomoFileTrait
         // when a listed path is missing.
         $mihomoDir = $this->mihomoPath();
         $files = [];
-        foreach (['base.yaml', 'override.yaml'] as $f) {
-            if (is_file($mihomoDir . '/' . $f)) {
-                $files[] = $f;
-            }
+        // base.yaml is NOT backed up: it is derived from config.xml by
+        // reconfigure.py and regenerated on every reconfigure. It is also
+        // root-owned 0640, so the www-run restore path cannot write it back.
+        if (is_file($mihomoDir . '/override.yaml')) {
+            $files[] = 'override.yaml';
         }
         if (is_dir($mihomoDir . '/profiles')) {
             $files[] = 'profiles';
         }
         if (empty($files)) {
-            throw new \RuntimeException('nothing to backup — no base.yaml or profiles/ found');
+            throw new \RuntimeException('nothing to backup — no override.yaml or profiles/ found');
         }
         $ts = date('Ymd-His');
         $safeLabel = preg_replace('/[^a-zA-Z0-9_-]/', '_', $label);

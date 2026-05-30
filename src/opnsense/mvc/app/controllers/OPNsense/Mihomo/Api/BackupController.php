@@ -3,11 +3,13 @@
 /**
  * /api/mihomo/backup/* — Backup tab.
  *
- * Bundle = tar.gz of {base.yaml, override.yaml, profiles/}. Optional
+ * Bundle = tar.gz of {override.yaml, profiles/}. Optional
  * AES-256-CBC encryption via `openssl enc -pbkdf2`.
  *
- * Note: subscriptions live in OPNsense config.xml so they are NOT included
- * here — the OPNsense built-in backup already covers them.
+ * Note: base.yaml is excluded — it is derived from config.xml by
+ * reconfigure.py and regenerated on every reconfigure. Subscriptions live in
+ * OPNsense config.xml so they are NOT included here either — the OPNsense
+ * built-in backup already covers them.
  */
 
 namespace OPNsense\Mihomo\Api;
@@ -241,11 +243,12 @@ class BackupController extends ApiControllerBase
 
     private function applyOverwrite($stage)
     {
-        foreach (['base.yaml', 'override.yaml'] as $f) {
-            $src = $stage . '/' . $f;
-            if (is_file($src)) {
-                $this->lockedWrite($this->mihomoPath($f), (string)@file_get_contents($src));
-            }
+        // base.yaml is intentionally skipped: it is root-owned 0640 (www cannot
+        // write it) and is regenerated from config.xml by the trailing
+        // reconfigure. Older backups may still contain it — ignore it.
+        $src = $stage . '/override.yaml';
+        if (is_file($src)) {
+            $this->lockedWrite($this->mihomoPath('override.yaml'), (string)@file_get_contents($src));
         }
         if (is_dir($stage . '/profiles')) {
             $profilesDir = $this->mihomoPath('profiles');
@@ -256,11 +259,9 @@ class BackupController extends ApiControllerBase
 
     private function applyMerge($stage)
     {
-        foreach (['base.yaml', 'override.yaml'] as $f) {
-            $src = $stage . '/' . $f;
-            if (is_file($src)) {
-                $this->lockedWrite($this->mihomoPath($f), (string)@file_get_contents($src));
-            }
+        $src = $stage . '/override.yaml';
+        if (is_file($src)) {
+            $this->lockedWrite($this->mihomoPath('override.yaml'), (string)@file_get_contents($src));
         }
         if (is_dir($stage . '/profiles')) {
             $this->copyDir($stage . '/profiles', $this->mihomoPath('profiles'));
