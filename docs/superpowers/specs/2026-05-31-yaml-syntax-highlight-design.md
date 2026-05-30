@@ -19,7 +19,7 @@
 
 | 决策点 | 选定方案 |
 | --- | --- |
-| 高亮库 | CodeMirror 5.65.x(最后的非模块化稳定版,纯 `<script>` 加载) |
+| 高亮库 | CodeMirror 5.65.21(固定版本,最后的非模块化稳定版,纯 `<script>` 加载) |
 | 覆盖范围 | 覆写 Tab(可编辑)+ YAML Tab(只读)+ Profiles 查看 YAML(只读弹窗) |
 | 配色主题 | 浅色(跟随页面,与现有 `#f5f5f5` textarea 及 OPNsense 亮色界面一致) |
 | 长行处理 | 自动折行(`lineWrapping: true`) |
@@ -34,10 +34,18 @@ src/opnsense/www/mihomo/codemirror/
 ├── codemirror.min.js      # CM5 核心 (~140KB)
 ├── codemirror.min.css     # 核心样式 (~10KB)
 ├── yaml.min.js            # YAML mode (~2KB)
-└── LICENSE                # CM5 MIT 协议原文
+├── LICENSE                # CM5 MIT 协议原文
+└── PROVENANCE.txt         # 版本/来源/SHA256/提取步骤,保证可复现
 ```
 
-选用 **CodeMirror 5.65.x**:最后一个稳定的非模块化版本,纯 `<script>` 标签即可加载,无需打包器,契合「vanilla JS + jQuery」约束。资源从官方 release 包提取后提交进仓库(离线设备无法走 CDN),增加约 160KB 仓库体积。
+选用 **CodeMirror 5.65.21**(固定到具体版本,非 `5.65.x` 区间)。这是最后一个稳定的非模块化版本,纯 `<script>` 标签即可加载,无需打包器,契合「vanilla JS + jQuery」约束。
+
+**可复现性要求**(记录于 `PROVENANCE.txt`):
+- 上游来源:从官方 release tarball `https://github.com/codemirror/codemirror5/archive/refs/tags/5.65.21.tar.gz` 提取(或 npm `codemirror@5.65.21`)。
+- 提取路径:`lib/codemirror.js` + `lib/codemirror.css` + `mode/yaml/yaml.js`。
+- minify 步骤:记录所用工具与命令(如直接取上游已发布的 `.min.js`,或本地 minify 命令)。
+- 每个 vendored 文件记录 **SHA256**,便于后续核验未被截断或篡改。
+- LICENSE 来源:CM5 仓库根 `LICENSE`(MIT)。
 
 部署链路:
 
@@ -67,15 +75,18 @@ function makeCM(textareaId, readOnly) {
         mode: 'yaml',
         lineNumbers: true,
         lineWrapping: true,
-        readOnly: readOnly,
-        viewportMargin: Infinity
+        readOnly: readOnly
     });
 }
 ```
 
+不设 `viewportMargin: Infinity`,沿用 CM 默认值(10)。理由:`.CodeMirror` 固定高度 420px(见第 3 节),只渲染视口内行即可;而 profiles / composed YAML 经 `readFileBounded` 上限达 5 MiB(MihomoFileTrait.php:126),`Infinity` 会强制渲染整篇大文档,与限高视口矛盾且劣化性能。CM 的虚拟滚动在默认值下已能流畅处理大文件。
+
 - `#override-content`(可编辑)→ `cmOverride = makeCM('override-content', false)`
 - `#composed-yaml`(只读)→ `cmComposed = makeCM('composed-yaml', true)`
 - Profiles「查看 YAML」→ BootstrapDialog 弹窗内挂临时 CM 只读实例,替换原 `alert(d.content)`
+
+**安全约束(防 HTML 注入)**:profile YAML 内容来自订阅,不可信。原 `alert(d.content)` 按纯文本显示,无注入风险;改 BootstrapDialog 后必须保持等价的纯文本语义。**强制要求**:先用 DOM API 创建空 `<textarea>` 作为 dialog message 节点,再 `cmTmp.setValue(d.content)` 填充内容;**禁止**任何形如 `message: '<textarea>' + d.content + '</textarea>'` 的字符串拼接 HTML,否则订阅内容中的 `</textarea><script>` 等文本会被解析为 HTML。
 
 **关键改动:读写改走 CM 实例而非 textarea**。CodeMirror 隐藏原 `<textarea>` 并接管,故所有 `$('#override-content').val(...)` / `.val()` 必须改为 `cmOverride.setValue(...)` / `cmOverride.getValue()`。涉及位置:
 
@@ -106,8 +117,10 @@ CSS 调整:现有 `.mihomo-yaml-edit` 的固定高度规则改挂到 CM 容器(`
 
 静态检查:
 
+- `sh -n install.sh uninstall.sh` 校验两个脚本语法(本功能新增了 cp / rm 步骤)。
+- `python3 -m pytest tests/test_contracts.py`(或仓库既有运行方式)跑安装脚本契约测试,确认新增的资源部署/清理步骤未破坏现有断言;若需要,补充覆盖 `www/mihomo` 部署与卸载的契约断言。
 - Volt 改动无独立 lint,靠部署后页面实际渲染验证。
-- 确认 vendored 的三个 JS/CSS 文件完整(非截断),`yaml.min.js` 在 `codemirror.min.js` 之后加载。
+- 核验 vendored 三文件的 SHA256 与 `PROVENANCE.txt` 一致(非截断、非篡改),`yaml.min.js` 在 `codemirror.min.js` 之后加载。
 
 部署 + 冒烟测试(SSH upload + Chrome DevTools MCP):
 
