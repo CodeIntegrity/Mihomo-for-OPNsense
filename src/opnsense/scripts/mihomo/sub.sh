@@ -50,7 +50,7 @@ _SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 try:
     import yaml
 except ImportError:
-    sys.stderr.write("FATAL: py-yaml required\n")
+    sys.stderr.write("FATAL: 需要 py-yaml\n")
     sys.exit(2)
 
 CONFIG_PATH = "/conf/config.xml"
@@ -101,7 +101,7 @@ def read_subscription(uuid: str) -> dict | None:
     try:
         tree = ET.parse(CONFIG_PATH)
     except (ET.ParseError, OSError) as e:
-        log(f"read config.xml failed: {e}", uuid)
+        log(f"读取 config.xml 失败：{e}", uuid)
         return None
     sub = _find_subscription(tree.getroot(), uuid)
     if sub is None:
@@ -192,7 +192,7 @@ def download(url: str, user_agent: str, timeout: int = 30) -> bytes:
     })
     with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
-            raise RuntimeError(f"http {resp.status}")
+            raise RuntimeError(f"HTTP {resp.status}")
         return resp.read()
 
 
@@ -265,7 +265,7 @@ def filter_proxies(profile: dict, include: list[str], exclude: list[str]) -> dic
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or not re.match(r"^[0-9a-f-]{36}$", argv[1]):
-        sys.stderr.write("usage: sub.sh <uuid> [activate]\n")
+        sys.stderr.write("用法：sub.sh <uuid> [activate]\n")
         return 2
     uuid = argv[1]
     # activate=1 (manual refresh) makes this subscription the active profile.
@@ -278,20 +278,20 @@ def main(argv: list[str]) -> int:
     try:
         fcntl.flock(lock_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
-        log("another refresh in progress, skipping", uuid)
+        log("已有刷新任务进行中，跳过", uuid)
         return 0
 
     sub = read_subscription(uuid)
     if sub is None:
-        log("subscription not found", uuid)
+        log("未找到该订阅", uuid)
         return 1
     if sub.get("enabled") != "1":
-        log("subscription disabled, skipping", uuid)
+        log("订阅已禁用，跳过", uuid)
         return 0
 
     name = sub.get("name", "")
     if not re.match(r"^[a-zA-Z0-9_-]+$", name):
-        log(f"invalid subscription name: {name!r}", uuid)
+        log(f"订阅名称非法：{name!r}", uuid)
         update_subscription_fields(uuid, {"last_status": "failed",
                                           "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         return 1
@@ -303,10 +303,10 @@ def main(argv: list[str]) -> int:
     update_subscription_fields(uuid, {"last_status": "updating"})
 
     try:
-        log(f"downloading {sub['url']!r}", uuid)
+        log(f"正在下载 {sub['url']!r}", uuid)
         raw = download(sub["url"], sub.get("user_agent", ""))
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, TimeoutError, OSError) as e:
-        log(f"download failed: {e}", uuid)
+        log(f"下载失败：{e}", uuid)
         update_subscription_fields(uuid, {
             "last_status": "failed",
             "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -317,14 +317,14 @@ def main(argv: list[str]) -> int:
     try:
         data = yaml.safe_load(raw) or {}
     except yaml.YAMLError as e:
-        log(f"yaml parse failed: {e}", uuid)
+        log(f"YAML 解析失败：{e}", uuid)
         update_subscription_fields(uuid, {
             "last_status": "failed",
             "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
         return 1
     if not isinstance(data, dict):
-        log("downloaded content is not a YAML mapping", uuid)
+        log("下载内容不是有效的 YAML 映射", uuid)
         update_subscription_fields(uuid, {
             "last_status": "failed",
             "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -343,7 +343,7 @@ def main(argv: list[str]) -> int:
     exclude = _split_csv(sub.get("exclude_keyword", ""))
     profile = filter_proxies(profile, include, exclude)
     node_count = len(profile.get("proxies") or [])
-    log(f"filtered: {node_count} proxies", uuid)
+    log(f"过滤后保留 {node_count} 个节点", uuid)
 
     # Write tmp profile, validate via `mihomo -t -f` if possible.
     # Temp file must live on the same filesystem as PROFILES_DIR so the
@@ -373,7 +373,7 @@ def main(argv: list[str]) -> int:
                 res = subprocess.run([MIHOMO_BIN, "-d", MIHOMO_DIR, "-t", "-f", full_tmp],
                                      capture_output=True, text=True, timeout=10)
                 if res.returncode != 0:
-                    log("mihomo -t failed:\n" + (res.stdout or "") + (res.stderr or ""), uuid)
+                    log("mihomo -t 配置校验失败：\n" + (res.stdout or "") + (res.stderr or ""), uuid)
                     update_subscription_fields(uuid, {
                         "last_status": "failed",
                         "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -420,20 +420,20 @@ def main(argv: list[str]) -> int:
     is_active = active_profile_name() == profile_name
     if activate and not is_active:
         if set_active_profile(profile_name):
-            log(f"activated profile {profile_name}", uuid)
+            log(f"已激活 profile {profile_name}", uuid)
             is_active = True
         else:
-            log(f"failed to set active profile {profile_name}", uuid)
+            log(f"激活 profile {profile_name} 失败", uuid)
 
     if is_active:
-        log("active profile updated — triggering reconfigure", uuid)
+        log("活动 profile 已更新 —— 触发 reconfigure", uuid)
         try:
             subprocess.run([CONFIGCTL, "mihomo", "reconfigure"],
                            capture_output=True, text=True, timeout=20)
         except (subprocess.TimeoutExpired, OSError) as e:
-            log(f"reconfigure dispatch failed: {e}", uuid)
+            log(f"派发 reconfigure 失败：{e}", uuid)
 
-    log("done", uuid)
+    log("完成", uuid)
     return 0
 
 
@@ -446,7 +446,7 @@ if __name__ == "__main__":
     try:
         sys.exit(main(sys.argv))
     except Exception as e:  # noqa: BLE001 — last-ditch
-        log(f"unhandled: {e}", sys.argv[1] if len(sys.argv) > 1 else "")
+        log(f"未捕获异常：{e}", sys.argv[1] if len(sys.argv) > 1 else "")
         try:
             if len(sys.argv) > 1 and re.match(r"^[0-9a-f-]{36}$", sys.argv[1]):
                 update_subscription_fields(sys.argv[1], {

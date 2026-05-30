@@ -32,7 +32,7 @@ import xml.etree.ElementTree as ET
 try:
     import yaml
 except ImportError:
-    sys.stderr.write("FATAL: py-yaml required\n")
+    sys.stderr.write("致命错误：缺少 py-yaml 依赖\n")
     sys.exit(2)
 
 CONFIG_XML = "/conf/config.xml"
@@ -129,7 +129,7 @@ def _write_progress(path: str, payload: dict) -> None:
 
 def main(argv: list[str]) -> int:
     if len(argv) < 4:
-        sys.stderr.write("usage: mihomo_health_check.sh <uuid> <profile_name> <mode>\n")
+        sys.stderr.write("用法：mihomo_health_check.sh <uuid> <profile_name> <mode>\n")
         return 2
     uuid = argv[1]
     profile_name = argv[2]
@@ -140,7 +140,7 @@ def main(argv: list[str]) -> int:
     try:
         root = _config_xml_root()
     except (ET.ParseError, OSError) as e:
-        _write_progress(job_file, {"state": "failed", "message": f"config.xml: {e}"})
+        _write_progress(job_file, {"state": "failed", "message": f"config.xml 读取失败：{e}"})
         return 1
 
     host, port, secret = _read_controller(root)

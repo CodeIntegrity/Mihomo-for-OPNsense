@@ -64,7 +64,7 @@ def _download_file(url, timeout=120):
         port = str(parsed.port or (443 if parsed.scheme == "https" else 80))
         real_ip = _resolve_doh(hostname)
         if real_ip is None:
-            raise RuntimeError(f"cannot resolve {hostname} via DoH")
+            raise RuntimeError(f"无法通过 DoH 解析 {hostname}")
         head_res = subprocess.run(
             ["/usr/local/bin/curl", "-skI",
              "--resolve", f"{hostname}:{port}:{real_ip}",
@@ -72,7 +72,7 @@ def _download_file(url, timeout=120):
              "--max-time", str(min(15, timeout)), url],
             capture_output=True, text=True, timeout=min(20, timeout + 5))
         if head_res.returncode != 0:
-            raise RuntimeError(f"curl HEAD returned {head_res.returncode}")
+            raise RuntimeError(f"curl HEAD 返回 {head_res.returncode}")
         status_line = head_res.stdout.split("\n")[0] if head_res.stdout else ""
         if any(f" {c} " in status_line for c in ("301", "302", "303", "307", "308")):
             new_url = ""
@@ -83,7 +83,7 @@ def _download_file(url, timeout=120):
             if new_url:
                 url = new_url
                 continue
-            raise RuntimeError("redirect without Location header")
+            raise RuntimeError("重定向响应缺少 Location 头")
         curl_cmd = ["/usr/local/bin/curl", "-sk",
                     "--resolve", f"{hostname}:{port}:{real_ip}",
                     "--connect-timeout", str(max(5, timeout // 3)),
@@ -94,11 +94,11 @@ def _download_file(url, timeout=120):
         try:
             res = subprocess.run(curl_cmd, capture_output=True, timeout=timeout + 5)
         except (subprocess.TimeoutExpired, OSError) as e:
-            raise RuntimeError(f"curl failed: {e}")
+            raise RuntimeError(f"curl 执行失败：{e}")
         if res.returncode != 0 or len(res.stdout) < 10:
-            raise RuntimeError(f"curl returned {res.returncode}, {len(res.stdout)} bytes")
+            raise RuntimeError(f"curl 返回 {res.returncode}，{len(res.stdout)} 字节")
         return res.stdout
-    raise RuntimeError("too many redirects")
+    raise RuntimeError("重定向次数过多")
 
 PROGRESS = "/tmp/mihomo-update-core.json"
 RELEASE_CACHE = "/tmp/mihomo-release-cache-core.json"
@@ -164,7 +164,7 @@ def fetch_url(url: str, timeout: int = 30) -> bytes:
     req = urllib.request.Request(url, headers=github_headers())
     with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
-            raise RuntimeError(f"http {resp.status} for {url}")
+            raise RuntimeError(f"HTTP {resp.status}：{url}")
         return resp.read()
 
 
@@ -249,8 +249,8 @@ def pick_asset(release: dict) -> tuple[str, str]:
         return gz_url, sha_url
 
     if not candidates:
-        raise RuntimeError("no freebsd-amd64 .gz asset in release")
-    raise RuntimeError("no downloadable freebsd-amd64 .gz asset in release")
+        raise RuntimeError("release 中没有 freebsd-amd64 的 .gz 资源")
+    raise RuntimeError("release 中没有可下载的 freebsd-amd64 .gz 资源")
 
 
 def apply_mirror(url: str) -> str:
@@ -274,7 +274,7 @@ def sha256_of_file(path: str) -> str:
 def smoke_test(path: str) -> str:
     res = subprocess.run([path, "-v"], capture_output=True, text=True, timeout=5)
     if res.returncode != 0:
-        raise RuntimeError(f"smoke test exit {res.returncode}: {(res.stderr or res.stdout)}")
+        raise RuntimeError(f"冒烟测试退出码 {res.returncode}：{(res.stderr or res.stdout)}")
     return (res.stdout or res.stderr).splitlines()[0] if (res.stdout or res.stderr) else ""
 
 
@@ -285,60 +285,60 @@ def service_running() -> bool:
 
 
 def main() -> int:
-    progress("running", step="resolving", percent=2)
+    progress("running", step="解析版本", percent=2)
     try:
         release = get_latest_release()
         gz_url, sha_url = pick_asset(release)
         gz_url  = apply_mirror(gz_url)
         sha_url = apply_mirror(sha_url) if sha_url else ""
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError, json.JSONDecodeError) as e:
-        progress("failed", message=f"resolve: {e}")
+        progress("failed", message=f"解析版本失败：{e}")
         return 1
 
     ver = release.get("tag_name", "unknown")
-    progress("running", step=f"downloading {ver}", percent=15)
+    progress("running", step=f"下载 {ver}", percent=15)
     gz_path = f"/tmp/mihomo-{ver}.gz"
     try:
         data = _download_file(gz_url, timeout=120)
         with open(gz_path, "wb") as fp:
             fp.write(data)
     except (RuntimeError, OSError) as e:
-        progress("failed", message=f"download .gz: {e}")
+        progress("failed", message=f"下载 .gz 失败：{e}")
         return 1
 
     # SHA256 check (best-effort if .sha256 asset exists).
     if sha_url:
-        progress("running", step="verifying SHA256", percent=40)
+        progress("running", step="校验 SHA256", percent=40)
         try:
             sha_blob = _download_file(sha_url, timeout=30).decode("utf-8", errors="replace")
         except (RuntimeError, OSError) as e:
-            progress("failed", message=f"download .sha256: {e}")
+            progress("failed", message=f"下载 .sha256 失败：{e}")
             return 1
         expected = sha_blob.strip().split()[0] if sha_blob.strip() else ""
         if not expected or expected != sha256_of_file(gz_path):
-            progress("failed", message="SHA256 mismatch")
+            progress("failed", message="SHA256 校验不匹配")
             try: os.unlink(gz_path)
             except OSError: pass
             return 1
 
-    progress("running", step="extracting", percent=55)
+    progress("running", step="解压", percent=55)
     new_bin = f"/tmp/mihomo-{ver}.bin"
     try:
         with gzip.open(gz_path, "rb") as gz, open(new_bin, "wb") as out:
             shutil.copyfileobj(gz, out)
         os.chmod(new_bin, 0o755)
     except OSError as e:
-        progress("failed", message=f"extract: {e}")
+        progress("failed", message=f"解压失败：{e}")
         return 1
     finally:
         try: os.unlink(gz_path)
         except OSError: pass
 
-    progress("running", step="smoke-test", percent=65)
+    progress("running", step="冒烟测试", percent=65)
     try:
         version_line = smoke_test(new_bin)
     except (subprocess.TimeoutExpired, RuntimeError, OSError) as e:
-        progress("failed", message=f"smoke test: {e}")
+        progress("failed", message=f"冒烟测试失败：{e}")
         try: os.unlink(new_bin)
         except OSError: pass
         return 1
@@ -346,25 +346,25 @@ def main() -> int:
     # Backup current and swap in.
     ts = time.strftime("%Y%m%d-%H%M%S")
     backup_path = f"{BIN_PATH}.bak.{ts}"
-    progress("running", step="installing", percent=75)
+    progress("running", step="安装", percent=75)
     try:
         if os.path.isfile(BIN_PATH):
             shutil.copy2(BIN_PATH, backup_path)
         shutil.move(new_bin, BIN_PATH)
         os.chmod(BIN_PATH, 0o755)
     except OSError as e:
-        progress("failed", message=f"install: {e}")
+        progress("failed", message=f"安装失败：{e}")
         return 1
 
-    progress("running", step="restarting", percent=85)
+    progress("running", step="重启服务", percent=85)
     try:
         subprocess.run([CONFIGCTL, "mihomo", "restart"], capture_output=True, text=True, timeout=30)
     except (subprocess.TimeoutExpired, OSError) as e:
-        progress("failed", message=f"restart dispatch: {e}")
+        progress("failed", message=f"派发重启失败：{e}")
         return 1
 
     # Poll up to 10s for service to come back up.
-    progress("running", step="verifying restart", percent=90)
+    progress("running", step="校验重启", percent=90)
     ok = False
     for _ in range(20):
         time.sleep(0.5)
@@ -373,7 +373,7 @@ def main() -> int:
             break
 
     if not ok and os.path.isfile(backup_path):
-        progress("running", step="rolling back", percent=95)
+        progress("running", step="回滚", percent=95)
         try:
             shutil.copy2(backup_path, BIN_PATH)
             os.chmod(BIN_PATH, 0o755)
@@ -381,10 +381,10 @@ def main() -> int:
                            capture_output=True, text=True, timeout=30)
         except OSError:
             pass
-        progress("failed", message=f"service did not recover; rolled back to {backup_path}")
+        progress("failed", message=f"服务未能恢复；已回滚至 {backup_path}")
         return 1
 
-    progress("done", step=f"updated to {ver}", percent=100,
+    progress("done", step=f"已更新至 {ver}", percent=100,
              message=version_line or ver)
     return 0
 
@@ -393,5 +393,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:  # noqa: BLE001
-        progress("failed", message=f"unhandled: {e}")
+        progress("failed", message=f"未捕获异常：{e}")
         sys.exit(1)

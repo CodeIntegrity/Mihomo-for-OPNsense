@@ -62,7 +62,7 @@ def _download_file(url, timeout=120):
         port = str(parsed.port or (443 if parsed.scheme == "https" else 80))
         real_ip = _resolve_doh(hostname)
         if real_ip is None:
-            raise RuntimeError(f"cannot resolve {hostname} via DoH")
+            raise RuntimeError(f"无法通过 DoH 解析 {hostname}")
         head_res = subprocess.run(
             ["/usr/local/bin/curl", "-skI",
              "--resolve", f"{hostname}:{port}:{real_ip}",
@@ -70,7 +70,7 @@ def _download_file(url, timeout=120):
              "--max-time", str(min(15, timeout)), url],
             capture_output=True, text=True, timeout=min(20, timeout + 5))
         if head_res.returncode != 0:
-            raise RuntimeError(f"curl HEAD returned {head_res.returncode}")
+            raise RuntimeError(f"curl HEAD 返回 {head_res.returncode}")
         status_line = head_res.stdout.split("\n")[0] if head_res.stdout else ""
         if any(f" {c} " in status_line for c in ("301", "302", "303", "307", "308")):
             new_url = ""
@@ -81,7 +81,7 @@ def _download_file(url, timeout=120):
             if new_url:
                 url = new_url
                 continue
-            raise RuntimeError("redirect without Location header")
+            raise RuntimeError("重定向响应缺少 Location 头")
         curl_cmd = ["/usr/local/bin/curl", "-sk",
                     "--resolve", f"{hostname}:{port}:{real_ip}",
                     "--connect-timeout", str(max(5, timeout // 3)),
@@ -92,11 +92,11 @@ def _download_file(url, timeout=120):
         try:
             res = subprocess.run(curl_cmd, capture_output=True, timeout=timeout + 5)
         except (subprocess.TimeoutExpired, OSError) as e:
-            raise RuntimeError(f"curl failed: {e}")
+            raise RuntimeError(f"curl 执行失败：{e}")
         if res.returncode != 0 or len(res.stdout) < 10:
-            raise RuntimeError(f"curl returned {res.returncode}, {len(res.stdout)} bytes")
+            raise RuntimeError(f"curl 返回 {res.returncode}，{len(res.stdout)} 字节")
         return res.stdout
-    raise RuntimeError("too many redirects")
+    raise RuntimeError("重定向次数过多")
 
 PROGRESS = "/tmp/mihomo-update-ui.json"
 UI_DIR = "/usr/local/etc/mihomo/ui"
@@ -173,7 +173,7 @@ def fetch(url, timeout=60):
     req = urllib.request.Request(url, headers=github_headers())
     with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
-            raise RuntimeError(f"http {resp.status} for {url}")
+            raise RuntimeError(f"HTTP {resp.status}：{url}")
         return resp.read()
 
 
@@ -218,7 +218,7 @@ def pick_asset(release: dict, variant: str) -> tuple[str, str]:
             continue
         if any(name_l.endswith(p) or p in name_l for p in patterns):
             return a["name"], url
-    raise RuntimeError(f"no matching asset for {variant} (patterns: {patterns})")
+    raise RuntimeError(f"没有匹配 {variant} 的资源（匹配规则：{patterns}）")
 
 
 def apply_mirror(url: str) -> str:
@@ -237,7 +237,7 @@ def extract_archive(archive_path: str, name: str, stage_dir: str) -> None:
                 # Reject absolute / parent-traversal paths.
                 target = os.path.realpath(os.path.join(stage_dir, member.filename))
                 if not target.startswith(os.path.realpath(stage_dir) + os.sep) and target != os.path.realpath(stage_dir):
-                    raise RuntimeError(f"unsafe zip entry: {member.filename}")
+                    raise RuntimeError(f"不安全的 zip 条目：{member.filename}")
             zf.extractall(stage_dir)
     elif nlower.endswith((".tar.gz", ".tgz", ".tar.xz")):
         import tarfile
@@ -246,10 +246,10 @@ def extract_archive(archive_path: str, name: str, stage_dir: str) -> None:
             for member in tf.getmembers():
                 target = os.path.realpath(os.path.join(stage_dir, member.name))
                 if not target.startswith(os.path.realpath(stage_dir) + os.sep) and target != os.path.realpath(stage_dir):
-                    raise RuntimeError(f"unsafe tar entry: {member.name}")
+                    raise RuntimeError(f"不安全的 tar 条目：{member.name}")
             tf.extractall(stage_dir)
     else:
-        raise RuntimeError(f"unsupported archive type: {name}")
+        raise RuntimeError(f"不支持的压缩包类型：{name}")
 
 
 def find_dist_root(stage_dir: str) -> str:
@@ -270,25 +270,25 @@ def find_dist_root(stage_dir: str) -> str:
     for root, _dirs, files in os.walk(stage_dir):
         if "index.html" in files:
             return root
-    raise RuntimeError("no index.html found in archive")
+    raise RuntimeError("压缩包中未找到 index.html")
 
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2 or argv[1] not in REPOS:
-        sys.stderr.write("usage: update_ui.sh <zashboard|metacubexd|yacd>\n")
+        sys.stderr.write("用法：update_ui.sh <zashboard|metacubexd|yacd>\n")
         return 2
     variant = argv[1]
 
-    progress("running", step="resolving", percent=5)
+    progress("running", step="解析版本", percent=5)
     try:
         release = get_latest_release(variant)
         asset_name, asset_url = pick_asset(release, variant)
         asset_url = apply_mirror(asset_url)
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as e:
-        progress("failed", message=f"resolve: {e}")
+        progress("failed", message=f"解析版本失败：{e}")
         return 1
 
-    progress("running", step=f"downloading {asset_name}", percent=25)
+    progress("running", step=f"下载 {asset_name}", percent=25)
     import tempfile
     tmp = tempfile.mkdtemp(prefix="mihomo-ui-", dir="/tmp")
     try:
@@ -298,10 +298,10 @@ def main(argv: list[str]) -> int:
             with open(archive_path, "wb") as fp:
                 fp.write(data)
         except (RuntimeError, OSError) as e:
-            progress("failed", message=f"download: {e}")
+            progress("failed", message=f"下载失败：{e}")
             return 1
 
-        progress("running", step="extracting", percent=55)
+        progress("running", step="解压", percent=55)
         stage = os.path.join(tmp, "stage")
         os.makedirs(stage, exist_ok=True)
         try:
@@ -309,18 +309,18 @@ def main(argv: list[str]) -> int:
             dist_root = find_dist_root(stage)
         except (RuntimeError, OSError) as e:
             # OSError covers tarfile.TarError / zipfile.BadZipFile (lazy imports)
-            progress("failed", message=f"extract: {e}")
+            progress("failed", message=f"解压失败：{e}")
             return 1
 
         # Backup current ui/ and swap in.
-        progress("running", step="installing", percent=80)
+        progress("running", step="安装", percent=80)
         try:
             if os.path.isdir(UI_DIR):
                 ts = time.strftime("%Y%m%d-%H%M%S")
                 shutil.move(UI_DIR, f"{UI_DIR}.bak.{ts}")
             shutil.copytree(dist_root, UI_DIR)
         except OSError as e:
-            progress("failed", message=f"install: {e}")
+            progress("failed", message=f"安装失败：{e}")
             return 1
 
         # Drop a version marker for future "current" detection.
@@ -337,7 +337,7 @@ def main(argv: list[str]) -> int:
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
-    progress("done", step=f"installed {variant}", percent=100,
+    progress("done", step=f"已安装 {variant}", percent=100,
              message=release.get("tag_name", ""))
     return 0
 
@@ -346,9 +346,9 @@ if __name__ == "__main__":
     # Signal liveness immediately — the PHP side checks progress 2 s after
     # launching us via daemon and reports "worker failed to start" if the
     # file still carries the `starting` seed.
-    progress("running", step="init", percent=1)
+    progress("running", step="初始化", percent=1)
     try:
         sys.exit(main(sys.argv))
     except Exception as e:  # noqa: BLE001
-        progress("failed", message=f"unhandled: {e}")
+        progress("failed", message=f"未捕获异常：{e}")
         sys.exit(1)

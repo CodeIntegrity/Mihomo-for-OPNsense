@@ -26,7 +26,7 @@ sleep "$JITTER"
 # ---- single-instance lock --------------------------------------------------
 exec 9>"$LOCK"
 if ! flock -n 9; then
-    log "another cron is running, exiting"
+    log "已有 cron 任务在运行，退出"
     exit 0
 fi
 
@@ -80,8 +80,8 @@ fi
 
 # ---- run each due subscription --------------------------------------------
 for uuid in $DUE; do
-    log "refreshing $uuid"
-    "$SCRIPT_DIR/sub.sh" "$uuid" || log "refresh $uuid returned non-zero"
+    log "正在刷新 $uuid"
+    "$SCRIPT_DIR/sub.sh" "$uuid" || log "刷新 $uuid 返回非零退出码"
 done
-log "cron pass complete"
+log "cron 本轮执行完成"
 exit 0

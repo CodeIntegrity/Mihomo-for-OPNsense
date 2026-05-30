@@ -135,7 +135,7 @@ def _download_file(url, timeout=120):
         port = str(parsed.port or (443 if parsed.scheme == "https" else 80))
         real_ip = _resolve_doh(hostname)
         if real_ip is None:
-            raise RuntimeError(f"cannot resolve {hostname} via DoH")
+            raise RuntimeError(f"无法通过 DoH 解析 {hostname}")
         # HEAD first to detect redirects.
         head_res = subprocess.run(
             ["/usr/local/bin/curl", "-skI",
@@ -145,7 +145,7 @@ def _download_file(url, timeout=120):
              url],
             capture_output=True, text=True, timeout=min(20, timeout + 5))
         if head_res.returncode != 0:
-            raise RuntimeError(f"curl HEAD returned {head_res.returncode}")
+            raise RuntimeError(f"curl HEAD 返回 {head_res.returncode}")
         # Parse status line and Location.
         status_line = head_res.stdout.split("\n")[0] if head_res.stdout else ""
         if " 301 " in status_line or " 302 " in status_line or \
@@ -159,9 +159,9 @@ def _download_file(url, timeout=120):
             if new_url:
                 url = new_url
                 continue
-            raise RuntimeError(f"redirect without Location header")
+            raise RuntimeError(f"重定向响应缺少 Location 头")
         if " 200 " not in status_line and " 201 " not in status_line:
-            raise RuntimeError(f"unexpected HTTP status: {status_line.strip()}")
+            raise RuntimeError(f"非预期的 HTTP 状态：{status_line.strip()}")
         # Download the body.
         curl_cmd = ["/usr/local/bin/curl", "-sk",
                     "--resolve", f"{hostname}:{port}:{real_ip}",
@@ -175,18 +175,18 @@ def _download_file(url, timeout=120):
             res = subprocess.run(curl_cmd, capture_output=True,
                                  timeout=timeout + 5)
         except (subprocess.TimeoutExpired, OSError) as e:
-            raise RuntimeError(f"curl failed: {e}")
+            raise RuntimeError(f"curl 执行失败：{e}")
         if res.returncode != 0 or len(res.stdout) < 100:
-            raise RuntimeError(f"curl returned {res.returncode}, {len(res.stdout)} bytes")
+            raise RuntimeError(f"curl 返回 {res.returncode}，{len(res.stdout)} 字节")
         return res.stdout
-    raise RuntimeError("too many redirects")
+    raise RuntimeError("重定向次数过多")
 
 
 def fetch(url, timeout=30):
     req = urllib.request.Request(url, headers=github_headers())
     with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
         if resp.status < 200 or resp.status >= 300:
-            raise RuntimeError(f"http {resp.status} for {url}")
+            raise RuntimeError(f"HTTP {resp.status}：{url}")
         return resp.read()
 
 
@@ -227,7 +227,7 @@ def pick_asset(release):
         url  = a.get("url") or ""
         if name == ASSET_NAME and url:
             return url
-    raise RuntimeError("no Country.mmdb asset in release")
+    raise RuntimeError("release 中没有 Country.mmdb 资源")
 
 
 def apply_mirror(url):
@@ -291,7 +291,7 @@ def main():
 
     if custom_url:
         # Custom URL path — download directly, skip GitHub API.
-        progress("running", step="downloading", percent=10)
+        progress("running", step="下载", percent=10)
         tmp = "/tmp/mihomo-Country.mmdb.new"
         try:
             data = _download_file(custom_url, timeout=120)
@@ -299,12 +299,12 @@ def main():
                 fp.write(data)
             os.chmod(tmp, 0o640)
         except (RuntimeError, OSError) as e:
-            progress("failed", message=f"download: {e}")
+            progress("failed", message=f"下载失败：{e}")
             return 1
 
         # Sanity check.
         if os.path.getsize(tmp) < 100_000:
-            progress("failed", message="downloaded file too small (likely an error page)")
+            progress("failed", message="下载文件过小（可能是错误页面）")
             try:
                 os.unlink(tmp)
             except OSError:
@@ -312,7 +312,7 @@ def main():
             return 1
 
         # Backup + atomic replace.
-        progress("running", step="installing", percent=70)
+        progress("running", step="安装", percent=70)
         try:
             if os.path.isfile(TARGET):
                 ts = time.strftime("%Y%m%d-%H%M%S")
@@ -321,7 +321,7 @@ def main():
             _chown_www(TARGET)
             os.chmod(TARGET, 0o640)
         except OSError as e:
-            progress("failed", message=f"install: {e}")
+            progress("failed", message=f"安装失败：{e}")
             return 1
 
         # No release metadata on the custom path — record the install date so
@@ -329,28 +329,28 @@ def main():
         write_version_marker(time.strftime("%Y-%m-%d"))
 
         # Hot-reload.
-        progress("running", step="reloading geo", percent=90)
+        progress("running", step="重载 geo 数据", percent=90)
         if not hot_reload_geo():
             try:
                 subprocess.run([CONFIGCTL, "mihomo", "reconfigure"],
                                capture_output=True, text=True, timeout=30)
             except (subprocess.TimeoutExpired, OSError) as e:
-                progress("failed", message=f"reconfigure fallback: {e}")
+                progress("failed", message=f"回退 reconfigure 失败：{e}")
                 return 1
 
-        progress("done", step="updated", percent=100, message="custom-url")
+        progress("done", step="已更新", percent=100, message="自定义链接")
         return 0
 
     # Default path — GitHub release.
-    progress("running", step="resolving", percent=5)
+    progress("running", step="解析版本", percent=5)
     try:
         release = get_latest_release()
         url = apply_mirror(pick_asset(release))
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, OSError) as e:
-        progress("failed", message=f"resolve: {e}")
+        progress("failed", message=f"解析版本失败：{e}")
         return 1
 
-    progress("running", step=f"downloading {release.get('tag_name', '')}", percent=30)
+    progress("running", step=f"下载 {release.get('tag_name', '')}", percent=30)
     tmp = "/tmp/mihomo-Country.mmdb.new"
     try:
         data = _download_file(url, timeout=120)
@@ -358,19 +358,19 @@ def main():
             fp.write(data)
         os.chmod(tmp, 0o640)
     except (RuntimeError, OSError) as e:
-        progress("failed", message=f"download: {e}")
+        progress("failed", message=f"下载失败：{e}")
         return 1
 
     # Sanity check — Country.mmdb starts with magic "M\xfe\xfb\xfd" near the
     # binary end; a simple size floor is enough to catch HTML error pages.
     if os.path.getsize(tmp) < 100_000:
-        progress("failed", message="downloaded file too small (likely an error page)")
+        progress("failed", message="下载文件过小（可能是错误页面）")
         try: os.unlink(tmp)
         except OSError: pass
         return 1
 
     # Backup + atomic replace.
-    progress("running", step="installing", percent=70)
+    progress("running", step="安装", percent=70)
     try:
         if os.path.isfile(TARGET):
             ts = time.strftime("%Y%m%d-%H%M%S")
@@ -379,23 +379,23 @@ def main():
         _chown_www(TARGET)
         os.chmod(TARGET, 0o640)
     except OSError as e:
-        progress("failed", message=f"install: {e}")
+        progress("failed", message=f"安装失败：{e}")
         return 1
 
     label = version_label(release)
     write_version_marker(label)
 
     # Try hot-reload first; fall back to reconfigure.
-    progress("running", step="reloading geo", percent=90)
+    progress("running", step="重载 geo 数据", percent=90)
     if not hot_reload_geo():
         try:
             subprocess.run([CONFIGCTL, "mihomo", "reconfigure"],
                            capture_output=True, text=True, timeout=30)
         except (subprocess.TimeoutExpired, OSError) as e:
-            progress("failed", message=f"reconfigure fallback: {e}")
+            progress("failed", message=f"回退 reconfigure 失败：{e}")
             return 1
 
-    progress("done", step="updated", percent=100, message=label or release.get("tag_name", ""))
+    progress("done", step="已更新", percent=100, message=label or release.get("tag_name", ""))
     return 0
 
 
@@ -403,5 +403,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:  # noqa: BLE001
-        progress("failed", message=f"unhandled: {e}")
+        progress("failed", message=f"未捕获异常：{e}")
         sys.exit(1)

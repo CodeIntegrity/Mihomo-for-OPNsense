@@ -37,7 +37,7 @@ import xml.etree.ElementTree as ET
 try:
     import yaml  # py-yaml; ships on OPNsense
 except ImportError:  # pragma: no cover
-    sys.stderr.write("FATAL: py-yaml is required (pkg install py311-yaml)\n")
+    sys.stderr.write("FATAL: 需要 py-yaml（pkg install py311-yaml）\n")
     sys.exit(2)
 
 CONFIG_XML = "/conf/config.xml"
@@ -292,7 +292,7 @@ def _read_yaml(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as fp:
         data = yaml.safe_load(fp) or {}
     if not isinstance(data, dict):
-        raise RuntimeError(f"{path} did not parse to a mapping")
+        raise RuntimeError(f"{path} 未解析为映射结构")
     return data
 
 
@@ -330,14 +330,14 @@ def _active_profile_name(root: ET.Element) -> str:
 def _mihomo_validate(path: str) -> tuple[bool, str]:
     """Run `mihomo -t -f path` and capture combined stdout/stderr."""
     if not os.path.exists(MIHOMO_BIN):
-        return True, "mihomo binary not found, skipping validation"
+        return True, "未找到 mihomo 二进制，跳过校验"
     try:
         res = subprocess.run(
             [MIHOMO_BIN, "-d", MIHOMO_DIR, "-t", "-f", path],
             capture_output=True, text=True, timeout=10,
         )
     except subprocess.TimeoutExpired as e:
-        return False, f"mihomo -t timed out: {e}"
+        return False, f"mihomo -t 校验超时：{e}"
     out = (res.stdout or "") + (res.stderr or "")
     return res.returncode == 0, out.strip()
 
@@ -351,7 +351,7 @@ def _api_reload() -> tuple[bool, str]:
     try:
         root = ET.parse(CONFIG_XML).getroot()
     except Exception as e:
-        return False, f"cannot parse {CONFIG_XML}: {e}"
+        return False, f"无法解析 {CONFIG_XML}：{e}"
     ec_node = root.find("./OPNsense/Mihomo/mihomo/controller/external_controller")
     secret_node = root.find("./OPNsense/Mihomo/mihomo/controller/secret")
     bind = (ec_node.text or "").strip() if ec_node is not None else "127.0.0.1:9090"
@@ -369,12 +369,12 @@ def _api_reload() -> tuple[bool, str]:
         data = resp.read().decode("utf-8", errors="replace")
         conn.close()
     except (ConnectionRefusedError, OSError) as e:
-        return False, f"reload connect failed: {e}"
+        return False, f"重载连接失败：{e}"
     if resp.status >= 200 and resp.status < 300:
         # Brief settle to avoid premature status checks
         time.sleep(1.5)
-        return True, "reloaded via API"
-    return False, f"reload http {resp.status}: {data}"
+        return True, "已通过 API 重载"
+    return False, f"重载 HTTP {resp.status}：{data}"
 
 
 def _service_restart() -> tuple[bool, str]:
@@ -385,7 +385,7 @@ def _service_restart() -> tuple[bool, str]:
             capture_output=True, text=True, timeout=20,
         )
     except subprocess.TimeoutExpired as e:
-        return False, f"restart timed out: {e}"
+        return False, f"重启超时：{e}"
     out = (res.stdout or "") + (res.stderr or "")
     return res.returncode == 0, out.strip()
 
@@ -395,7 +395,7 @@ def _acquire_lock():
     try:
         fcntl.flock(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
-        sys.stderr.write("FAIL another reconfigure is in progress\n")
+        sys.stderr.write("FAIL 已有 reconfigure 任务进行中\n")
         sys.exit(3)
     return fp
 
@@ -409,7 +409,7 @@ def main() -> int:
     try:
         root = ET.parse(CONFIG_XML).getroot()
     except (ET.ParseError, OSError) as e:
-        print(f"FAIL cannot read {CONFIG_XML}: {e}")
+        print(f"FAIL 无法读取 {CONFIG_XML}：{e}")
         return 1
 
     # 1. Render base.yaml.
@@ -418,7 +418,7 @@ def main() -> int:
     try:
         _atomic_write(BASE_PATH, base_yaml)
     except OSError as e:
-        print(f"FAIL writing base.yaml: {e}")
+        print(f"FAIL 写入 base.yaml 失败：{e}")
         return 1
 
     # 2/3. Read override + active profile.
@@ -436,12 +436,12 @@ def main() -> int:
     try:
         _atomic_write(tmp_path, merged_yaml)
     except OSError as e:
-        print(f"FAIL writing tmp config: {e}")
+        print(f"FAIL 写入临时配置失败：{e}")
         return 1
 
     ok, msg = _mihomo_validate(tmp_path)
     if not ok:
-        print(f"FAIL mihomo validation:\n{msg}")
+        print(f"FAIL mihomo 配置校验失败：\n{msg}")
         return 1
 
     # 6. Commit + reload.
@@ -456,7 +456,7 @@ def main() -> int:
             pass
         os.chmod(CONFIG_PATH, 0o640)
     except OSError as e:
-        print(f"FAIL committing config.yaml: {e}")
+        print(f"FAIL 提交 config.yaml 失败：{e}")
         return 1
 
     ok, msg = _api_reload()
@@ -464,12 +464,12 @@ def main() -> int:
         # Fallback to service restart.
         ok2, msg2 = _service_restart()
         if ok2:
-            print(f"OK config applied, reloaded via restart fallback ({msg})")
+            print(f"OK 配置已应用，通过重启回退完成重载（{msg}）")
             return 0
-        print(f"FAIL config written but reload failed: api=({msg}) restart=({msg2})")
+        print(f"FAIL 配置已写入但重载失败：api=（{msg}） restart=（{msg2}）")
         return 1
 
-    print(f"OK config applied ({msg})")
+    print(f"OK 配置已应用（{msg}）")
     return 0
 
 
