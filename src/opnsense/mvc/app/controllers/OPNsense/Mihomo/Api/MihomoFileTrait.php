@@ -272,7 +272,11 @@ trait MihomoFileTrait
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
-        $ok = (stripos($out, 'OK') !== false) && (stripos($out, 'fail') === false);
+        // reconfigure.py emits a single status line prefixed with "OK" on
+        // success or "FAIL" on error. Match the prefix — never a "fail"
+        // substring, which also appears inside legitimate success messages
+        // (e.g. "reloaded via restart fallback (... connect failed)").
+        $ok = stripos(ltrim($out), 'OK') === 0;
         return ['success' => $ok, 'message' => trim($out)];
     }
 
