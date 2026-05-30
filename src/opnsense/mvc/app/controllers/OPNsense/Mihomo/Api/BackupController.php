@@ -98,7 +98,7 @@ class BackupController extends ApiControllerBase
         $isEncrypted = preg_match('/\.enc$/', $_FILES['file']['name']);
 
         // Decrypt if needed.
-        $tarFile = '/tmp/mihomo-restore-' . posix_getpid() . '.tar.gz';
+        $tarFile = '/tmp/mihomo-restore-' . getmypid() . '.tar.gz';
         $stage = null;
         try {
             if ($isEncrypted) {
@@ -127,7 +127,7 @@ class BackupController extends ApiControllerBase
             catch (\Exception $e) { /* fall through */ }
 
             // Extract to a staging dir.
-            $stage = '/tmp/mihomo-restore-' . posix_getpid();
+            $stage = '/tmp/mihomo-restore-' . getmypid();
             @mkdir($stage, 0750, true);
             $cmd = sprintf('tar -xzf %s -C %s 2>&1', escapeshellarg($tarFile), escapeshellarg($stage));
             list($out, $rc) = $this->safeExec($cmd);

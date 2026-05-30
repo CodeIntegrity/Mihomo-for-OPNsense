@@ -64,7 +64,7 @@ class OverrideController extends ApiControllerBase
             return ['status' => 'failed', 'message' => 'POST required'];
         }
         $content = (string)$this->request->getPost('content', null, '');
-        $tmp = '/tmp/mihomo-override-validate-' . posix_getpid() . '.yaml';
+        $tmp = '/tmp/mihomo-override-validate-' . getmypid() . '.yaml';
         try {
             @file_put_contents($tmp, $content);
             @chmod($tmp, 0640);

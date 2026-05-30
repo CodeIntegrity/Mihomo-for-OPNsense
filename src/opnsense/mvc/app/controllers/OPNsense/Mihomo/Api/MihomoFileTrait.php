@@ -108,7 +108,7 @@ trait MihomoFileTrait
         if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
             throw new \RuntimeException("cannot create directory: {$dir}");
         }
-        $tmp = $file . '.tmp.' . posix_getpid();
+        $tmp = $file . '.tmp.' . getmypid();
         if (@file_put_contents($tmp, $content) === false) {
             throw new \RuntimeException("cannot write tmp file: {$tmp}");
         }
