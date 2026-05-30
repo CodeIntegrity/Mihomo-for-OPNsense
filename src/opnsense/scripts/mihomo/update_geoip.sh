@@ -2,11 +2,14 @@
 """GeoIP database update — configd action `update-geoip`.
 
 Pipeline:
-    1. Resolve latest tag from MetaCubeX/meta-rules-dat (1h cache).
+    1. Resolve latest release from MetaCubeX/meta-rules-dat (1h cache). The
+       repo is a rolling release (tag_name == "latest"), so the version label
+       is the release publish date (YYYY-MM-DD).
     2. Download Country.mmdb asset.
     3. Atomic-replace /usr/local/etc/mihomo/Country.mmdb with a timestamped
        backup of the previous file.
-    4. Try `PUT /configs/geo` for hot-reload. If unsupported, fall back to
+    4. Write a .version-geoip marker for future "current" detection.
+    5. Try `PUT /configs/geo` for hot-reload. If unsupported, fall back to
        `configctl mihomo reconfigure`.
 
 Progress is written to /tmp/mihomo-update-geoip.json for UI polling.
@@ -35,6 +38,7 @@ _SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 PROGRESS = "/tmp/mihomo-update-geoip.json"
 RELEASE_CACHE = "/tmp/mihomo-release-cache-geoip.json"
 TARGET = "/usr/local/etc/mihomo/Country.mmdb"
+VERSION_MARKER = "/usr/local/etc/mihomo/.version-geoip"
 CONFIG_PATH = "/conf/config.xml"
 REPO = "MetaCubeX/meta-rules-dat"
 ASSET_NAME = "country.mmdb"  # case-insensitive match
@@ -204,6 +208,7 @@ def get_latest_release():
     data = json.loads(raw)
     slim = {
         "tag_name": data.get("tag_name", ""),
+        "published_at": data.get("published_at", ""),
         "assets": [{"name": a.get("name", ""), "url": a.get("browser_download_url", "")}
                    for a in (data.get("assets") or [])],
     }
@@ -230,6 +235,33 @@ def apply_mirror(url):
     if prefix and url.startswith("https://github.com/"):
         return f"{prefix}/{url}"
     return url
+
+
+def version_label(release):
+    """Version marker mirroring the UI's check display: for the rolling
+    'latest' tag, use the release publish date (YYYY-MM-DD); else the tag."""
+    tag = (release.get("tag_name") or "").strip()
+    if tag.lower() == "latest":
+        published = (release.get("published_at") or "").strip()
+        if published:
+            try:
+                t = time.strptime(published, "%Y-%m-%dT%H:%M:%SZ")
+                return time.strftime("%Y-%m-%d", t)
+            except ValueError:
+                pass
+    return tag
+
+
+def write_version_marker(label):
+    if not label:
+        return
+    try:
+        with open(VERSION_MARKER, "w", encoding="utf-8") as fp:
+            fp.write(label)
+        os.chmod(VERSION_MARKER, 0o640)
+        _chown_www(VERSION_MARKER)
+    except OSError:
+        pass
 
 
 def hot_reload_geo():
@@ -292,6 +324,10 @@ def main():
             progress("failed", message=f"install: {e}")
             return 1
 
+        # No release metadata on the custom path — record the install date so
+        # "current" stays truthful and any stale GitHub-era marker is cleared.
+        write_version_marker(time.strftime("%Y-%m-%d"))
+
         # Hot-reload.
         progress("running", step="reloading geo", percent=90)
         if not hot_reload_geo():
@@ -346,6 +382,9 @@ def main():
         progress("failed", message=f"install: {e}")
         return 1
 
+    label = version_label(release)
+    write_version_marker(label)
+
     # Try hot-reload first; fall back to reconfigure.
     progress("running", step="reloading geo", percent=90)
     if not hot_reload_geo():
@@ -356,7 +395,7 @@ def main():
             progress("failed", message=f"reconfigure fallback: {e}")
             return 1
 
-    progress("done", step="updated", percent=100, message=release.get("tag_name", ""))
+    progress("done", step="updated", percent=100, message=label or release.get("tag_name", ""))
     return 0
 
 

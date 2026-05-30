@@ -104,9 +104,31 @@ class UpdateController extends ApiControllerBase
             'resource'   => $resource,
             'variant'    => $resource === 'ui' ? $variant : null,
             'current'    => $this->detectCurrentVersion($resource, $variant),
-            'latest'     => (string)($latest['tag_name'] ?? ''),
+            'latest'     => $this->formatLatest($resource, $latest),
             'cached_at'  => is_file($cacheFile) ? filemtime($cacheFile) : null,
         ];
+    }
+
+    /**
+     * Resolve a human, version-number-like "latest" string from a release.
+     *
+     * meta-rules-dat is a rolling release whose tag_name is literally
+     * "latest", so for geoip we surface the release publish date (YYYY-MM-DD)
+     * instead. Other resources use their real tag_name.
+     */
+    private function formatLatest($resource, $release)
+    {
+        $tag = (string)($release['tag_name'] ?? '');
+        if ($resource === 'geoip' && strcasecmp($tag, 'latest') === 0) {
+            $published = (string)($release['published_at'] ?? '');
+            if ($published !== '') {
+                $ts = strtotime($published);
+                if ($ts !== false) {
+                    return gmdate('Y-m-d', $ts);
+                }
+            }
+        }
+        return $tag;
     }
 
     /**
@@ -285,6 +307,17 @@ class UpdateController extends ApiControllerBase
             return trim(strtok($out, "\n"));
         }
         if ($resource === 'geoip') {
+            // Prefer the version marker written at install time (the release
+            // publish date) so it compares exactly against checkAction's
+            // latest. Fall back to file mtime for installs predating the
+            // marker.
+            $marker = '/usr/local/etc/mihomo/.version-geoip';
+            if (is_file($marker)) {
+                $v = trim((string)@file_get_contents($marker));
+                if ($v !== '') {
+                    return $v;
+                }
+            }
             $file = '/usr/local/etc/mihomo/Country.mmdb';
             if (!is_file($file)) {
                 return '';
