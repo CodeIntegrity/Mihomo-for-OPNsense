@@ -122,8 +122,6 @@ rm -f /var/log/mihomo_sub.log
 
 # 清理临时文件
 rm -f /tmp/mihomo-traffic-state.json
-rm -f /tmp/mihomo-latest-release.json
-rm -f /tmp/mihomo-geoip-release.json
 rm -f /tmp/mihomo-sub-cron.lock
 rm -f /tmp/mihomo-sub-*.lock
 rm -f /tmp/mihomo-reconfigure.lock
@@ -131,6 +129,9 @@ rm -f /tmp/mihomo-health-*.json
 rm -f /tmp/mihomo-update-*.json
 rm -f /tmp/mihomo-release-cache-*.json
 rm -f /tmp/mihomo-config.yaml.*
+rm -f /tmp/mihomo-Country.mmdb.new
+rm -f /tmp/mihomo-override-validate-*.yaml
+rm -rf /tmp/mihomo-restore-*
 
 log_success "程序文件删除完成"
 
