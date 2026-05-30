@@ -10,6 +10,8 @@
 
 <style>
     .mihomo-tab-content { padding-top: 14px; }
+    #backup .content-box { padding: 16px 20px; }
+    #backup .content-box > h4:first-child { margin-top: 0; }
     .mihomo-yaml-edit {
         display: block;
         width: 100%;
