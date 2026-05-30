@@ -104,7 +104,7 @@ if (tab === 'yaml')     { loadComposedYaml(); cmComposed.refresh(); }
 if (tab === 'override') { loadOverride();     cmOverride.refresh(); }
 ```
 
-实例化时机:`$(function(){...})` 内一次性创建两个常驻实例(DOM 就绪,textarea 隐藏 → 创建后塌缩,靠首次 `onTabShown` 的 `refresh()` 撑开)。Profiles 弹窗实例按需创建,`BootstrapDialog` 的 `onshown` 回调里 `refresh()`,关闭时销毁。
+实例化时机:`$(function(){...})` 内一次性创建两个常驻实例(DOM 就绪,textarea 隐藏 → 创建后塌缩,靠首次 `onTabShown` 的 `refresh()` 撑开)。Profiles 弹窗实例按需创建,`BootstrapDialog` 的 `onshown` 回调里 `refresh()`;`onhidden` 回调里调用 `cmTmp.toTextArea()` 销毁实例(还原 textarea、解绑事件监听),并将持有的引用置空,避免临时实例累积泄漏。
 
 错误处理(Debug-First,不静默兜底):
 
@@ -135,7 +135,7 @@ CSS 调整:现有 `.mihomo-yaml-edit` 的固定高度规则改挂到 CM 容器(`
 
 - Override:加载现有内容 → 染色 → 编辑 → 保存(确认 `getValue()` 取到值而非空)→ 校验按钮仍走后端
 - YAML 只读:切到 Tab → 染色 → 复制 / 下载取到内容 → 确认不可编辑
-- Profiles:点「查看 YAML」→ 弹窗内只读染色(替换原 alert)
+- Profiles:点「查看 YAML」→ 弹窗内只读染色(替换原 alert);关闭弹窗后确认临时 CM 实例已销毁(`toTextArea()` 调用、引用置空)。**对抗性用例**:构造一个内容含 `</textarea><script>alert(1)</script>` 的 profile,点「查看 YAML」,确认该文本在弹窗内按纯文本原样显示、不弹窗、不执行脚本(验证第 2 节防注入约束)。
 - 回归:切其他 6 个 Tab 确认无破坏;刷新页面 hash 路由(`#override`)仍能恢复并 refresh
 
 验证失败处理:资源 404 先查 install.sh 的 cp 路径与 lighttpd alias;编辑器塌缩查 `refresh()` 时机。不引入兜底掩盖问题。
