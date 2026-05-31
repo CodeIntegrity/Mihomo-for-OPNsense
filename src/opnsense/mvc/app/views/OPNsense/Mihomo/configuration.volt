@@ -565,6 +565,29 @@ $(function() {
     }
 
     // ----- Tab 3: Profiles -----
+    // 只读 CM 弹窗展示 YAML(纯文本语义,防 HTML 注入)
+    function showYamlDialog(title, content) {
+        var ta = document.createElement('textarea');  // DOM 创建,不拼 HTML
+        BootstrapDialog.show({
+            title: title,
+            message: ta,                               // 传 DOM 节点而非字符串
+            size: BootstrapDialog.SIZE_WIDE,
+            onshown: function(dialog) {
+                dialog.cmTmp = CodeMirror.fromTextArea(ta, {
+                    mode: 'yaml', lineNumbers: true, lineWrapping: true, readOnly: true
+                });
+                dialog.cmTmp.setValue(content);        // setValue 填充,非拼接
+                dialog.cmTmp.refresh();
+            },
+            onhidden: function(dialog) {
+                if (dialog.cmTmp) {
+                    dialog.cmTmp.toTextArea();          // 销毁实例,还原 textarea、解绑事件
+                    dialog.cmTmp = null;                // 置空引用,避免泄漏
+                }
+            },
+            buttons: [{ label: '关闭', action: function(d) { d.close(); } }]
+        });
+    }
     function loadProfiles() {
         $.get('/api/mihomo/profiles/searchItem').done(function(j) {
             var $tbody = $('#profile-rows').empty();
@@ -588,7 +611,16 @@ $(function() {
                 }
                 $cmds.append(' ', actionBtn('fa-eye', '查看 YAML',
                     'GET', '/api/mihomo/profiles/viewYaml/' + encodeURIComponent(p.name),
-                    function(d) { alert(d.content || d.message); }));
+                    function(d) {
+                        if (d.status === 'ok') {
+                            showYamlDialog('查看 YAML', d.content || '');
+                        } else {
+                            BootstrapDialog.show({
+                                title: '查看 YAML',
+                                message: d.message || 'failed'
+                            });
+                        }
+                    }));
                 $cmds.append(' ', actionBtn('fa-trash-o', '删除',
                     'POST', '/api/mihomo/profiles/delete/' + encodeURIComponent(p.name),
                     function() { loadProfiles(); }, p.active, true));
