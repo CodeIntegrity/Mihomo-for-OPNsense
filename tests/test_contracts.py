@@ -70,6 +70,27 @@ class MihomoContractsTest(unittest.TestCase):
         self.assertNotIn("act_toggle_full_help", view)
         self.assertNotIn("settings-full-help-toggle", view)
 
+    def test_codemirror_assets_deployed_and_cleaned(self):
+        install = read("install.sh")
+        uninstall = read("uninstall.sh")
+        # install 部署 CM 资源到 opnsense/www/mihomo,且不复用核心 WWW_DIR
+        self.assertIn('OPN_WWW_DIR="$ROOT/opnsense/www"', install)
+        self.assertIn("cp -R -f ./src/opnsense/www/mihomo", install)
+        # uninstall 清理资源目录
+        self.assertIn("rm -rf /usr/local/opnsense/www/mihomo", uninstall)
+
+    def test_configuration_volt_uses_codemirror(self):
+        view = read("src/opnsense/mvc/app/views/OPNsense/Mihomo/configuration.volt")
+        # 引入 vendored 资源
+        self.assertIn("/ui/mihomo/codemirror/codemirror.min.js", view)
+        self.assertIn("/ui/mihomo/codemirror/yaml.min.js", view)
+        # 读写已切到 CM API(不再用 textarea .val() 读这两个目标)
+        self.assertIn("cmOverride.getValue()", view)
+        self.assertIn("cmComposed.setValue", view)
+        # profiles 弹窗用 setValue 填充,杜绝 alert(d.content)
+        self.assertIn("showYamlDialog", view)
+        self.assertNotIn("alert(d.content", view)
+
 
 # ---- Update helpers ----------------------------------------------------
 
