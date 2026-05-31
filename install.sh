@@ -17,6 +17,7 @@ BIN_DIR="$ROOT/bin"
 WWW_DIR="$ROOT/www"
 CONF_DIR="$ROOT/etc"
 MVC_DIR="$ROOT/opnsense/mvc/app"
+OPN_WWW_DIR="$ROOT/opnsense/www"
 SCRIPTS_DIR="$ROOT/opnsense/scripts/mihomo"
 RC_DIR="$ROOT/etc/rc.d"
 PLUGINS="$ROOT/etc/inc/plugins.inc.d"
@@ -122,6 +123,9 @@ mkdir -p "$MVC_DIR/controllers/OPNsense/Mihomo/Api" \
 run_or_die cp -R -f ./src/opnsense/mvc/app/. "$MVC_DIR/"
 run_or_die cp -f ./src/opnsense/service/conf/actions.d/actions_mihomo.conf "$ACTIONS/"
 run_or_die cp -R -f ./src/opnsense/scripts/mihomo/. "$SCRIPTS_DIR/"
+# 部署前端静态资源(CodeMirror 语法高亮)
+mkdir -p "$OPN_WWW_DIR/mihomo"
+run_or_die cp -R -f ./src/opnsense/www/mihomo/. "$OPN_WWW_DIR/mihomo/"
 chmod +x "$SCRIPTS_DIR"/*.sh "$SCRIPTS_DIR"/*.py 2>/dev/null || true
 log_success "MVC 层部署完成"
 

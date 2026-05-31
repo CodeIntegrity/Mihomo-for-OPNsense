@@ -1,0 +1,18 @@
+CodeMirror vendored assets — provenance
+========================================
+Version: 5.65.21
+Upstream: https://github.com/codemirror/codemirror5 (tag 5.65.21)
+Package:  https://registry.npmjs.org/codemirror/-/codemirror-5.65.21.tgz
+License:  MIT (see ./LICENSE)
+
+Extracted files:
+  codemirror.min.js  <- lib/codemirror.js (upstream source, unminified; .min.js name kept for reference-path consistency)
+  codemirror.min.css <- lib/codemirror.css
+  yaml.min.js        <- mode/yaml/yaml.js
+
+Minify: 上游 npm 包内 lib/ 为未压缩源码,未做二次压缩,faithfully vendored。
+
+SHA256:
+  codemirror.min.js   e98aac5ffa07bae58acd4ff07c4293059f8921c0ae0eba506929d8c6f41c9288
+  codemirror.min.css  eb494ea972d2661ef86f7f6ac656dd6786d721e49c9c1b46e1eb967e4b6f9bf3
+  yaml.min.js         7de73109e5bfb6951d53764f5210f00f7859b57525811fab6b6f843980a7726e

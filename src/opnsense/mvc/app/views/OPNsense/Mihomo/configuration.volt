@@ -1,3 +1,7 @@
+<link rel="stylesheet" type="text/css" href="{{ cache_safe('/ui/mihomo/codemirror/codemirror.min.css') }}"/>
+<script src="{{ cache_safe('/ui/mihomo/codemirror/codemirror.min.js') }}"></script>
+<script src="{{ cache_safe('/ui/mihomo/codemirror/yaml.min.js') }}"></script>
+
 {#
  # Mihomo Configuration — 8 Tabs in one page.
  #
@@ -25,6 +29,13 @@
         resize: vertical;
         box-sizing: border-box;
     }
+    .CodeMirror {
+        height: 420px;
+        border: 1px solid #ccc;
+        font-family: monospace;
+        font-size: 12px;
+    }
+    .CodeMirror-scroll { min-height: 420px; }
     .mihomo-log {
         display: block;
         width: 100%;
@@ -421,20 +432,35 @@ prepend-proxy-groups:
 $(function() {
     'use strict';
 
+    // ----- CodeMirror 实例 -----
+    function makeCM(textareaId, readOnly) {
+        return CodeMirror.fromTextArea(document.getElementById(textareaId), {
+            mode: 'yaml',
+            lineNumbers: true,
+            lineWrapping: true,
+            readOnly: readOnly
+        });
+    }
+    var cmOverride = makeCM('override-content', false);
+    var cmComposed = makeCM('composed-yaml', true);
+
     // ----- Hash routing — preserve current tab across reloads -----
+    // Bind the shown.bs.tab listener BEFORE tab('show') so the initial tab
+    // (e.g. a direct load on #override/#yaml) fires onTabShown and the CM
+    // editor gets refreshed — otherwise it renders collapsed until clicked.
     var hash = window.location.hash || '#settings';
-    $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
     $('#mihomo-tabs a').on('shown.bs.tab', function(e) {
         history.replaceState(null, '', e.target.getAttribute('href'));
         var tab = e.target.getAttribute('href').substring(1);
         onTabShown(tab);
     });
+    $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
 
     function onTabShown(tab) {
         if (tab === 'profiles')      loadProfiles();
-        if (tab === 'yaml')          loadComposedYaml();
+        if (tab === 'yaml')          { loadComposedYaml(); cmComposed.refresh(); }
         if (tab === 'log')           loadLogTail(true);
-        if (tab === 'override')      loadOverride();
+        if (tab === 'override')      { loadOverride();     cmOverride.refresh(); }
         if (tab === 'backup')        loadBackupList();
         if (tab === 'subscriptions') loadSubLog();
         if (tab === 'updates')       loadAllUpdateStates();
@@ -539,6 +565,29 @@ $(function() {
     }
 
     // ----- Tab 3: Profiles -----
+    // 只读 CM 弹窗展示 YAML(纯文本语义,防 HTML 注入)
+    function showYamlDialog(title, content) {
+        var ta = document.createElement('textarea');  // DOM 创建,不拼 HTML
+        BootstrapDialog.show({
+            title: title,
+            message: ta,                               // 传 DOM 节点而非字符串
+            size: BootstrapDialog.SIZE_WIDE,
+            onshown: function(dialog) {
+                dialog.cmTmp = CodeMirror.fromTextArea(ta, {
+                    mode: 'yaml', lineNumbers: true, lineWrapping: true, readOnly: true
+                });
+                dialog.cmTmp.setValue(content);        // setValue 填充,非拼接
+                dialog.cmTmp.refresh();
+            },
+            onhidden: function(dialog) {
+                if (dialog.cmTmp) {
+                    dialog.cmTmp.toTextArea();          // 销毁实例,还原 textarea、解绑事件
+                    dialog.cmTmp = null;                // 置空引用,避免泄漏
+                }
+            },
+            buttons: [{ label: '关闭', action: function(d) { d.close(); } }]
+        });
+    }
     function loadProfiles() {
         $.get('/api/mihomo/profiles/searchItem').done(function(j) {
             var $tbody = $('#profile-rows').empty();
@@ -562,7 +611,16 @@ $(function() {
                 }
                 $cmds.append(' ', actionBtn('fa-eye', '查看 YAML',
                     'GET', '/api/mihomo/profiles/viewYaml/' + encodeURIComponent(p.name),
-                    function(d) { alert(d.content || d.message); }));
+                    function(d) {
+                        if (d.status === 'ok') {
+                            showYamlDialog('查看 YAML', d.content || '');
+                        } else {
+                            BootstrapDialog.show({
+                                title: '查看 YAML',
+                                message: d.message || 'failed'
+                            });
+                        }
+                    }));
                 $cmds.append(' ', actionBtn('fa-trash-o', '删除',
                     'POST', '/api/mihomo/profiles/delete/' + encodeURIComponent(p.name),
                     function() { loadProfiles(); }, p.active, true));
@@ -594,18 +652,18 @@ $(function() {
     // ----- Tab 4: Override -----
     function loadOverride() {
         $.get('/api/mihomo/override/get').done(function(j) {
-            $('#override-content').val((j && j.content) || '');
+            cmOverride.setValue((j && j.content) || '');
         });
     }
     $('#btn-override-save').click(function() {
         var $msg = $('#override-msg').text('保存中...').css('color', '#888');
-        $.post('/api/mihomo/override/set', {content: $('#override-content').val()}).done(function(d) {
+        $.post('/api/mihomo/override/set', {content: cmOverride.getValue()}).done(function(d) {
             $msg.text(d.message || d.status).css('color', d.status === 'ok' ? '#5cb85c' : '#d9534f');
         });
     });
     $('#btn-override-validate').click(function() {
         var $msg = $('#override-msg').text('校验中...').css('color', '#888');
-        $.post('/api/mihomo/override/validate', {content: $('#override-content').val()}).done(function(d) {
+        $.post('/api/mihomo/override/validate', {content: cmOverride.getValue()}).done(function(d) {
             $msg.text(d.message || d.status).css('color', d.status === 'ok' ? '#5cb85c' : '#d9534f');
         });
     });
@@ -620,16 +678,22 @@ $(function() {
     // ----- Tab 5: YAML -----
     function loadComposedYaml() {
         $.get('/api/mihomo/override/composedYaml').done(function(j) {
-            $('#composed-yaml').val((j && j.content) || (j && j.message) || '');
+            cmComposed.setValue((j && j.content) || (j && j.message) || '');
         });
     }
     $('#btn-yaml-refresh').click(loadComposedYaml);
     $('#btn-yaml-copy').click(function() {
-        var el = document.getElementById('composed-yaml');
-        el.select(); document.execCommand('copy');
+        var text = cmComposed.getValue();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text);
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta);
+            ta.select(); document.execCommand('copy'); ta.remove();
+        }
     });
     $('#btn-yaml-download').click(function() {
-        var blob = new Blob([$('#composed-yaml').val() || ''], {type: 'text/yaml'});
+        var blob = new Blob([cmComposed.getValue() || ''], {type: 'text/yaml'});
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url; a.download = 'config.yaml';
