@@ -445,13 +445,16 @@ $(function() {
     var cmComposed = makeCM('composed-yaml', true);
 
     // ----- Hash routing — preserve current tab across reloads -----
+    // Bind the shown.bs.tab listener BEFORE tab('show') so the initial tab
+    // (e.g. a direct load on #override/#yaml) fires onTabShown and the CM
+    // editor gets refreshed — otherwise it renders collapsed until clicked.
     var hash = window.location.hash || '#settings';
-    $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
     $('#mihomo-tabs a').on('shown.bs.tab', function(e) {
         history.replaceState(null, '', e.target.getAttribute('href'));
         var tab = e.target.getAttribute('href').substring(1);
         onTabShown(tab);
     });
+    $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
 
     function onTabShown(tab) {
         if (tab === 'profiles')      loadProfiles();
