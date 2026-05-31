@@ -432,6 +432,18 @@ prepend-proxy-groups:
 $(function() {
     'use strict';
 
+    // ----- CodeMirror 实例 -----
+    function makeCM(textareaId, readOnly) {
+        return CodeMirror.fromTextArea(document.getElementById(textareaId), {
+            mode: 'yaml',
+            lineNumbers: true,
+            lineWrapping: true,
+            readOnly: readOnly
+        });
+    }
+    var cmOverride = makeCM('override-content', false);
+    var cmComposed = makeCM('composed-yaml', true);
+
     // ----- Hash routing — preserve current tab across reloads -----
     var hash = window.location.hash || '#settings';
     $('#mihomo-tabs a[href="' + hash + '"]').tab('show');
@@ -443,9 +455,9 @@ $(function() {
 
     function onTabShown(tab) {
         if (tab === 'profiles')      loadProfiles();
-        if (tab === 'yaml')          loadComposedYaml();
+        if (tab === 'yaml')          { loadComposedYaml(); cmComposed.refresh(); }
         if (tab === 'log')           loadLogTail(true);
-        if (tab === 'override')      loadOverride();
+        if (tab === 'override')      { loadOverride();     cmOverride.refresh(); }
         if (tab === 'backup')        loadBackupList();
         if (tab === 'subscriptions') loadSubLog();
         if (tab === 'updates')       loadAllUpdateStates();
@@ -605,18 +617,18 @@ $(function() {
     // ----- Tab 4: Override -----
     function loadOverride() {
         $.get('/api/mihomo/override/get').done(function(j) {
-            $('#override-content').val((j && j.content) || '');
+            cmOverride.setValue((j && j.content) || '');
         });
     }
     $('#btn-override-save').click(function() {
         var $msg = $('#override-msg').text('保存中...').css('color', '#888');
-        $.post('/api/mihomo/override/set', {content: $('#override-content').val()}).done(function(d) {
+        $.post('/api/mihomo/override/set', {content: cmOverride.getValue()}).done(function(d) {
             $msg.text(d.message || d.status).css('color', d.status === 'ok' ? '#5cb85c' : '#d9534f');
         });
     });
     $('#btn-override-validate').click(function() {
         var $msg = $('#override-msg').text('校验中...').css('color', '#888');
-        $.post('/api/mihomo/override/validate', {content: $('#override-content').val()}).done(function(d) {
+        $.post('/api/mihomo/override/validate', {content: cmOverride.getValue()}).done(function(d) {
             $msg.text(d.message || d.status).css('color', d.status === 'ok' ? '#5cb85c' : '#d9534f');
         });
     });
@@ -631,16 +643,22 @@ $(function() {
     // ----- Tab 5: YAML -----
     function loadComposedYaml() {
         $.get('/api/mihomo/override/composedYaml').done(function(j) {
-            $('#composed-yaml').val((j && j.content) || (j && j.message) || '');
+            cmComposed.setValue((j && j.content) || (j && j.message) || '');
         });
     }
     $('#btn-yaml-refresh').click(loadComposedYaml);
     $('#btn-yaml-copy').click(function() {
-        var el = document.getElementById('composed-yaml');
-        el.select(); document.execCommand('copy');
+        var text = cmComposed.getValue();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text);
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta);
+            ta.select(); document.execCommand('copy'); ta.remove();
+        }
     });
     $('#btn-yaml-download').click(function() {
-        var blob = new Blob([$('#composed-yaml').val() || ''], {type: 'text/yaml'});
+        var blob = new Blob([cmComposed.getValue() || ''], {type: 'text/yaml'});
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url; a.download = 'config.yaml';
