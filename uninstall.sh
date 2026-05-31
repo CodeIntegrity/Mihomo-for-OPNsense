@@ -103,6 +103,9 @@ rm -rf /usr/local/opnsense/mvc/app/controllers/OPNsense/Mihomo
 rm -rf /usr/local/opnsense/mvc/app/models/OPNsense/Mihomo
 rm -rf /usr/local/opnsense/mvc/app/views/OPNsense/Mihomo
 
+# 删除前端静态资源（CodeMirror）
+rm -rf /usr/local/opnsense/www/mihomo
+
 # 删除 configd 脚本
 rm -rf /usr/local/opnsense/scripts/mihomo
 
