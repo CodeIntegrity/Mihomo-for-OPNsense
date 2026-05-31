@@ -1,3 +1,7 @@
+<link rel="stylesheet" type="text/css" href="{{ cache_safe('/ui/mihomo/codemirror/codemirror.min.css') }}"/>
+<script src="{{ cache_safe('/ui/mihomo/codemirror/codemirror.min.js') }}"></script>
+<script src="{{ cache_safe('/ui/mihomo/codemirror/yaml.min.js') }}"></script>
+
 {#
  # Mihomo Configuration — 8 Tabs in one page.
  #
@@ -25,6 +29,13 @@
         resize: vertical;
         box-sizing: border-box;
     }
+    .CodeMirror {
+        height: 420px;
+        border: 1px solid #ccc;
+        font-family: monospace;
+        font-size: 12px;
+    }
+    .CodeMirror-scroll { min-height: 420px; }
     .mihomo-log {
         display: block;
         width: 100%;
