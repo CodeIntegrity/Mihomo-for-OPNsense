@@ -260,10 +260,22 @@ class DashboardController extends ApiControllerBase
             }
         } while ($running > 0 && $status === CURLM_OK);
 
+        // curl_errno() is NOT populated by curl_multi_exec(); the real per-transfer
+        // CURLcode must be pulled from the info queue. Map it back to each site key.
+        $errnos = [];
+        while ($info = curl_multi_info_read($mh)) {
+            foreach ($handles as $key => $handle) {
+                if ($handle === $info['handle']) {
+                    $errnos[$key] = $info['result'];
+                    break;
+                }
+            }
+        }
+
         $results = [];
         foreach (self::$CHECK_SITES as $s) {
             $ch    = $handles[$s['key']];
-            $errno = curl_errno($ch);
+            $errno = $errnos[$s['key']] ?? 0;
             $code  = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $secs  = (float)curl_getinfo($ch, CURLINFO_TOTAL_TIME);
             curl_multi_remove_handle($mh, $ch);
