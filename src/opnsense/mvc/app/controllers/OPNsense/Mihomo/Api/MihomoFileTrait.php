@@ -347,6 +347,62 @@ trait MihomoFileTrait
     }
 
     /**
+     * Map a libcurl errno to our stable errorCode enum.
+     * Connection-class errors → proxy_unreachable; timeouts → timeout.
+     */
+    protected function curlErrorCode($errno)
+    {
+        return $errno === CURLE_OPERATION_TIMEOUTED ? 'timeout' : 'proxy_unreachable';
+    }
+
+    /**
+     * Perform one HTTP GET through the Mihomo proxy.
+     * Returns: ['ok'=>bool, 'status'=>int, 'body'=>string|null,
+     *           'ms'=>int|null, 'errorCode'=>string|null]
+     * On disabled proxy (port 0) returns ok=false, errorCode=proxy_disabled.
+     */
+    protected function proxiedCurl($url, $timeout = 5, array $extra = [])
+    {
+        $port = $this->resolveProxyPort();
+        if ($port <= 0) {
+            return ['ok' => false, 'status' => 0, 'body' => null,
+                    'ms' => null, 'errorCode' => 'proxy_disabled'];
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_PROXY          => '127.0.0.1',
+            CURLOPT_PROXYPORT      => $port,
+            CURLOPT_PROXYTYPE      => CURLPROXY_HTTP,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                . 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+        ] + $extra);
+        $body  = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $code  = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $secs  = (float)curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+        curl_close($ch);
+
+        if ($errno !== 0) {
+            return ['ok' => false, 'status' => 0, 'body' => null,
+                    'ms' => null, 'errorCode' => $this->curlErrorCode($errno)];
+        }
+        $ok = $code >= 200 && $code < 400;
+        return [
+            'ok'        => $ok,
+            'status'    => $code,
+            'body'      => is_string($body) ? $body : null,
+            'ms'        => (int)round($secs * 1000),
+            'errorCode' => $ok ? null : 'upstream_error',
+        ];
+    }
+
+    /**
      * Read all profile meta files and return a list:
      *   [{ name, source_type, source_url, sub_id, last_update, node_count, active }]
      */
