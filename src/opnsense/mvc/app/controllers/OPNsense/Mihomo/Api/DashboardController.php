@@ -7,6 +7,8 @@
  * - logsAction            — tail mihomo.log with optional level filter.
  * - healthCheckAction     — kick off async health check, returns uuid.
  * - healthProgressAction  — poll /tmp/mihomo-health-<uuid>.json progress.
+ * - egressIpAction        — egress public IP + geo via proxy.
+ * - accessCheckAction     — per-site connectivity + latency via proxy.
  */
 
 namespace OPNsense\Mihomo\Api;
@@ -19,6 +21,14 @@ class DashboardController extends ApiControllerBase
 
     /** Back-end traffic state — survives FPM workers via /tmp file. */
     private static $TRAFFIC_STATE_FILE = '/tmp/mihomo-traffic-state.json';
+
+    /** Access-check targets (fixed set, mirrors OpenClash defaults). */
+    private static $CHECK_SITES = [
+        ['key' => 'baidu',   'name' => '百度',        'url' => 'https://www.baidu.com'],
+        ['key' => 'netease', 'name' => '网易云音乐',  'url' => 'https://music.163.com'],
+        ['key' => 'github',  'name' => 'GitHub',      'url' => 'https://github.com'],
+        ['key' => 'youtube', 'name' => 'YouTube',     'url' => 'https://www.youtube.com'],
+    ];
 
     /** GET /api/mihomo/dashboard/traffic */
     public function trafficAction()
@@ -201,5 +211,77 @@ class DashboardController extends ApiControllerBase
             'country' => (string)($j['country'] ?? ''),
             'isp'     => (string)($j['isp'] ?? $j['organization'] ?? ''),
         ];
+    }
+
+    /** GET /api/mihomo/dashboard/accessCheck — per-site connectivity via proxy. */
+    public function accessCheckAction()
+    {
+        $port = $this->resolveProxyPort();
+        if ($port <= 0) {
+            $results = [];
+            foreach (self::$CHECK_SITES as $s) {
+                $results[] = ['key' => $s['key'], 'name' => $s['name'], 'ok' => false,
+                              'status' => 0, 'ms' => null, 'errorCode' => 'proxy_disabled'];
+            }
+            return ['ok' => true, 'results' => $results];
+        }
+
+        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+            . '(KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+        $mh = curl_multi_init();
+        $handles = [];
+        foreach (self::$CHECK_SITES as $s) {
+            $ch = curl_init($s['url']);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_NOBODY         => false,
+                CURLOPT_RANGE          => '0-0',
+                CURLOPT_PROXY          => '127.0.0.1',
+                CURLOPT_PROXYPORT      => $port,
+                CURLOPT_PROXYTYPE      => CURLPROXY_HTTP,
+                CURLOPT_CONNECTTIMEOUT => 3,
+                CURLOPT_TIMEOUT        => 5,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 3,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_USERAGENT      => $ua,
+            ]);
+            curl_multi_add_handle($mh, $ch);
+            $handles[$s['key']] = $ch;
+        }
+
+        $running = null;
+        do {
+            curl_multi_exec($mh, $running);
+            curl_multi_select($mh, 1.0);
+        } while ($running > 0);
+
+        $results = [];
+        foreach (self::$CHECK_SITES as $s) {
+            $ch    = $handles[$s['key']];
+            $errno = curl_errno($ch);
+            $code  = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $secs  = (float)curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+
+            if ($errno !== 0) {
+                $results[] = ['key' => $s['key'], 'name' => $s['name'], 'ok' => false,
+                              'status' => 0, 'ms' => null,
+                              'errorCode' => $this->curlErrorCode($errno)];
+                continue;
+            }
+            $ok = $code >= 200 && $code < 400;
+            $results[] = [
+                'key'       => $s['key'],
+                'name'      => $s['name'],
+                'ok'        => $ok,
+                'status'    => $code,
+                'ms'        => (int)round($secs * 1000),
+                'errorCode' => $ok ? null : 'upstream_error',
+            ];
+        }
+        curl_multi_close($mh);
+        return ['ok' => true, 'results' => $results];
     }
 }
