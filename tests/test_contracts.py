@@ -91,6 +91,29 @@ class MihomoContractsTest(unittest.TestCase):
         self.assertIn("showYamlDialog", view)
         self.assertNotIn("alert(d.content", view)
 
+    def test_dashboard_running_status_replaces_log_tail(self):
+        view = read("src/opnsense/mvc/app/views/OPNsense/Mihomo/dashboard.volt")
+        ctrl = read("src/opnsense/mvc/app/controllers/OPNsense/Mihomo/Api/DashboardController.php")
+        trait = read("src/opnsense/mvc/app/controllers/OPNsense/Mihomo/Api/MihomoFileTrait.php")
+        # 日志卡已从仪表盘移除
+        self.assertNotIn('id="log-tail"', view)
+        self.assertNotIn("mihomo-log", view)
+        self.assertNotIn("logPoller", view)
+        # 新增运行状态两端点的前端调用
+        self.assertIn("/api/mihomo/dashboard/egressIp", view)
+        self.assertIn("/api/mihomo/dashboard/accessCheck", view)
+        # 控制器新增两个 action
+        self.assertIn("function egressIpAction", ctrl)
+        self.assertIn("function accessCheckAction", ctrl)
+        # 走代理而非直连，且端口字段用对（无 http_port 字段读取）
+        self.assertIn("CURLOPT_PROXY", trait)
+        self.assertIn("mixed_port", trait)
+        self.assertNotIn("->http_port", trait)
+        self.assertNotIn("http_port", ctrl)
+        # 失败契约：四个稳定 errorCode 都在前端有映射
+        for code in ("proxy_disabled", "proxy_unreachable", "timeout", "upstream_error"):
+            self.assertIn(code, view)
+
 
 # ---- Update helpers ----------------------------------------------------
 
