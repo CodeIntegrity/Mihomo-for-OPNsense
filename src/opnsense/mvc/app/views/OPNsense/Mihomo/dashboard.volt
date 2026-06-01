@@ -350,27 +350,31 @@
         var backoff = intervalMs;
         var timer = null;
         var stopped = false;
+        var gen = 0;
         function tick() {
             if (stopped) return;
+            var my = gen;
             fetch(url, {credentials: 'same-origin'})
                 .then(function(r) { return r.json(); })
                 .then(function(j) {
+                    if (stopped || my !== gen) return;
                     backoff = intervalMs;
                     hideBanner();
                     onSuccess(j);
-                    if (!stopped) timer = setTimeout(tick, backoff);
+                    timer = setTimeout(tick, backoff);
                 })
                 .catch(function(err) {
+                    if (stopped || my !== gen) return;
                     backoff = Math.min(backoff * 2, 10000);
                     if (onFailure) onFailure(err);
                     showBanner('重新连接中...');
-                    if (!stopped) timer = setTimeout(tick, backoff);
+                    timer = setTimeout(tick, backoff);
                 });
         }
         tick();
         return {
-            stop: function() { stopped = true; if (timer) clearTimeout(timer); },
-            resume: function() { stopped = false; tick(); }
+            stop: function() { stopped = true; gen++; if (timer) clearTimeout(timer); },
+            resume: function() { stopped = false; gen++; if (timer) clearTimeout(timer); tick(); }
         };
     }
 
