@@ -5,6 +5,7 @@
  #   1. Service Status (state light + uptime + pid + start/stop/restart + open UI)
  #   2. Active Profile (name + nodes + last_update + switch / refresh / health check)
  #   3. Realtime Metrics (4 cards: ↑/↓ rate, conns, mem) — 2s poll
+ #   4. Running Status (egress IP + access check)         — 30s / 15s poll
  #
  # All realtime data goes through /api/mihomo/* — vanilla JS, no framework.
 #}
@@ -94,6 +95,30 @@
     .mihomo-status-light.is-running { background: #5cb85c; box-shadow: 0 0 6px #5cb85c; }
     .mihomo-status-light.is-stopped { background: #d9534f; }
     .mihomo-status-light.is-unknown { background: #f0ad4e; }
+    .mihomo-status-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 0; border-bottom: 1px solid #f3f3f3;
+    }
+    .mihomo-status-row:last-child { border-bottom: none; }
+    .mihomo-status-row .label { color: #555; font-size: 13px; }
+    .mihomo-status-row .val { font-family: monospace; font-size: 13px; }
+    .mihomo-ip-line { font-family: monospace; font-size: 15px; }
+    .mihomo-ip-geo { color: #888; font-size: 13px; margin-left: 8px; }
+    .mihomo-section-sub {
+        font-size: 12px; color: #999; text-transform: uppercase;
+        margin: 14px 0 4px;
+    }
+    .mihomo-dot {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        margin-right: 6px; background: #aaa; vertical-align: middle;
+    }
+    .mihomo-dot.ok { background: #5cb85c; }
+    .mihomo-dot.bad { background: #d9534f; }
+    .mihomo-ms.g { color: #32b643; }
+    .mihomo-ms.y { color: #f0ad4e; }
+    .mihomo-ms.o { color: #e85600; }
+    .mihomo-icon-btn { cursor: pointer; color: #888; margin-left: 10px; }
+    .mihomo-icon-btn:hover { color: #333; }
 </style>
 
 <div class="content-box mihomo-banner" id="mihomo-status-banner" style="display:none;">
@@ -236,6 +261,41 @@
                     <div class="value" id="metric-memory">—</div>
                     <div class="label">&nbsp;</div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# 4. Running Status — egress IP + access check #}
+<div class="mihomo-card">
+    <div class="card-header">
+        <span class="card-icon fa fa-globe"></span>
+        <span class="card-title">运行状态</span>
+        <i class="fa fa-eye mihomo-icon-btn" id="rs-eye" title="隐藏 IP"></i>
+        <i class="fa fa-refresh mihomo-icon-btn" id="rs-refresh" title="立即刷新"></i>
+    </div>
+    <div class="card-body">
+        <div class="mihomo-section-sub">出口 IP</div>
+        <div class="mihomo-status-row">
+            <span class="mihomo-ip-line"><span id="rs-ip">—</span><span class="mihomo-ip-geo" id="rs-ip-geo"></span></span>
+        </div>
+        <div class="mihomo-section-sub">访问检查</div>
+        <div id="rs-check-list">
+            <div class="mihomo-status-row" data-key="baidu">
+                <span class="label">百度</span>
+                <span class="val"><span class="mihomo-dot" id="dot-baidu"></span><span id="st-baidu">—</span> <span class="mihomo-ms" id="ms-baidu"></span></span>
+            </div>
+            <div class="mihomo-status-row" data-key="netease">
+                <span class="label">网易云音乐</span>
+                <span class="val"><span class="mihomo-dot" id="dot-netease"></span><span id="st-netease">—</span> <span class="mihomo-ms" id="ms-netease"></span></span>
+            </div>
+            <div class="mihomo-status-row" data-key="github">
+                <span class="label">GitHub</span>
+                <span class="val"><span class="mihomo-dot" id="dot-github"></span><span id="st-github">—</span> <span class="mihomo-ms" id="ms-github"></span></span>
+            </div>
+            <div class="mihomo-status-row" data-key="youtube">
+                <span class="label">YouTube</span>
+                <span class="val"><span class="mihomo-dot" id="dot-youtube"></span><span id="st-youtube">—</span> <span class="mihomo-ms" id="ms-youtube"></span></span>
             </div>
         </div>
     </div>
