@@ -183,4 +183,23 @@ class DashboardController extends ApiControllerBase
         }
         return $data;
     }
+
+    /** GET /api/mihomo/dashboard/egressIp — egress public IP via proxy. */
+    public function egressIpAction()
+    {
+        $r = $this->proxiedCurl('https://api.ip.sb/geoip', 5);
+        if (!$r['ok']) {
+            return ['ok' => false, 'errorCode' => $r['errorCode']];
+        }
+        $j = json_decode((string)$r['body'], true);
+        if (!is_array($j)) {
+            return ['ok' => false, 'errorCode' => 'upstream_error'];
+        }
+        return [
+            'ok'      => true,
+            'ip'      => (string)($j['ip'] ?? ''),
+            'country' => (string)($j['country'] ?? ''),
+            'isp'     => (string)($j['isp'] ?? $j['organization'] ?? ''),
+        ];
+    }
 }
