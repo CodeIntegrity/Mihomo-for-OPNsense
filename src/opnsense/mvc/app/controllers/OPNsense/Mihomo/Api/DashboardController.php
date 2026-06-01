@@ -252,9 +252,13 @@ class DashboardController extends ApiControllerBase
 
         $running = null;
         do {
-            curl_multi_exec($mh, $running);
-            curl_multi_select($mh, 1.0);
-        } while ($running > 0);
+            $status = curl_multi_exec($mh, $running);
+            if ($running > 0) {
+                if (curl_multi_select($mh, 1.0) === -1) {
+                    usleep(1000);
+                }
+            }
+        } while ($running > 0 && $status === CURLM_OK);
 
         $results = [];
         foreach (self::$CHECK_SITES as $s) {
