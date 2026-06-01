@@ -327,6 +327,26 @@ trait MihomoFileTrait
     }
 
     /**
+     * Resolve the HTTP proxy port to route checks through Mihomo.
+     * Priority: mixed_port (>0, serves HTTP too) → port (>0) → 0 (disabled).
+     * Field names per Mihomo.xml: there is no `http_port`.
+     */
+    protected function resolveProxyPort()
+    {
+        $cfg = Config::getInstance()->object();
+        $general = $cfg->OPNsense->Mihomo->mihomo->general ?? null;
+        $mixed = (int)($general->mixed_port ?? 0);
+        if ($mixed > 0) {
+            return $mixed;
+        }
+        $port = (int)($general->port ?? 0);
+        if ($port > 0) {
+            return $port;
+        }
+        return 0;
+    }
+
+    /**
      * Read all profile meta files and return a list:
      *   [{ name, source_type, source_url, sub_id, last_update, node_count, active }]
      */
