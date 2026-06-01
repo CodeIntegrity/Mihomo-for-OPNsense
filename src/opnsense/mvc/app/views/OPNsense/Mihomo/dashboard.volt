@@ -117,7 +117,10 @@
     .mihomo-ms.g { color: #32b643; }
     .mihomo-ms.y { color: #f0ad4e; }
     .mihomo-ms.o { color: #e85600; }
-    .mihomo-icon-btn { cursor: pointer; color: #888; margin-left: 10px; }
+    .mihomo-icon-btn {
+        cursor: pointer; color: #888; margin-left: 10px;
+        background: none; border: none; padding: 0; font-size: 14px; line-height: 1;
+    }
     .mihomo-icon-btn:hover { color: #333; }
 </style>
 
@@ -271,8 +274,8 @@
     <div class="card-header">
         <span class="card-icon fa fa-globe"></span>
         <span class="card-title">运行状态</span>
-        <i class="fa fa-eye mihomo-icon-btn" id="rs-eye" title="隐藏 IP"></i>
-        <i class="fa fa-refresh mihomo-icon-btn" id="rs-refresh" title="立即刷新"></i>
+        <button type="button" class="mihomo-icon-btn" id="rs-eye" title="隐藏 IP" aria-label="隐藏 IP"><i class="fa fa-eye" id="rs-eye-icon"></i></button>
+        <button type="button" class="mihomo-icon-btn" id="rs-refresh" title="立即刷新" aria-label="立即刷新"><i class="fa fa-refresh"></i></button>
     </div>
     <div class="card-body">
         <div class="mihomo-section-sub">出口 IP</div>
@@ -557,12 +560,96 @@
         document.getElementById('metric-memory').textContent      = fmtBytes(j.memory);
     });
 
+    // ----- running status: egress IP + access check -----
+    var ERR_TEXT = {
+        proxy_disabled:    '代理端口未启用',
+        proxy_unreachable: '代理不可达',
+        timeout:           '超时',
+        upstream_error:    '查询失败'
+    };
+    var CHECK_KEYS = ['baidu', 'netease', 'github', 'youtube'];
+    var ipPrivacy = localStorage.getItem('mihomo_rs_privacy') === 'true';
+    var lastIp = '';
+
+    function renderIp(j) {
+        var ipEl = document.getElementById('rs-ip');
+        var geoEl = document.getElementById('rs-ip-geo');
+        if (!j.ok) {
+            lastIp = '';
+            ipEl.textContent = ERR_TEXT[j.errorCode] || '—';
+            geoEl.textContent = '';
+            return;
+        }
+        lastIp = j.ip || '';
+        ipEl.textContent = ipPrivacy ? '***.***.***.***' : (j.ip || '—');
+        var geo = [j.country, j.isp].filter(Boolean).join(' / ');
+        geoEl.textContent = geo ? ('· ' + geo) : '';
+    }
+
+    function msClass(ms) {
+        if (ms == null) return '';
+        if (ms <= 500) return 'g';
+        if (ms <= 1000) return 'y';
+        return 'o';
+    }
+
+    function renderCheck(j) {
+        var map = {};
+        (j.results || []).forEach(function(r) { map[r.key] = r; });
+        CHECK_KEYS.forEach(function(k) {
+            var r = map[k];
+            var dot = document.getElementById('dot-' + k);
+            var st  = document.getElementById('st-' + k);
+            var ms  = document.getElementById('ms-' + k);
+            if (!r) { st.textContent = '—'; ms.textContent = ''; dot.className = 'mihomo-dot'; return; }
+            if (r.ok) {
+                dot.className = 'mihomo-dot ok';
+                st.textContent = '正常';
+                ms.textContent = (r.ms != null ? r.ms + ' ms' : '');
+                ms.className = 'mihomo-ms ' + msClass(r.ms);
+            } else {
+                dot.className = 'mihomo-dot bad';
+                st.textContent = ERR_TEXT[r.errorCode] || '失败';
+                ms.textContent = '';
+                ms.className = 'mihomo-ms';
+            }
+        });
+    }
+
+    var egressPoller = poller('/api/mihomo/dashboard/egressIp', 30000, renderIp);
+    var checkPoller  = poller('/api/mihomo/dashboard/accessCheck', 15000, renderCheck);
+
+    // privacy eye toggle — swaps only the inner icon class, keeps the button intact
+    function applyEye() {
+        var icon = document.getElementById('rs-eye-icon');
+        var btn = document.getElementById('rs-eye');
+        icon.className = 'fa ' + (ipPrivacy ? 'fa-eye-slash' : 'fa-eye');
+        btn.title = ipPrivacy ? '显示 IP' : '隐藏 IP';
+        btn.setAttribute('aria-label', btn.title);
+        var ipEl = document.getElementById('rs-ip');
+        if (lastIp) ipEl.textContent = ipPrivacy ? '***.***.***.***' : lastIp;
+    }
+    document.getElementById('rs-eye').onclick = function() {
+        ipPrivacy = !ipPrivacy;
+        localStorage.setItem('mihomo_rs_privacy', ipPrivacy ? 'true' : 'false');
+        applyEye();
+    };
+    applyEye();
+
+    // manual refresh — restart both pollers immediately
+    document.getElementById('rs-refresh').onclick = function() {
+        egressPoller.stop(); checkPoller.stop();
+        egressPoller.resume(); checkPoller.resume();
+    };
+
     // ----- pause when hidden -----
     document.addEventListener('visibilitychange', function() {
         if (document.hidden) {
             statusPoller.stop(); trafficPoller.stop();
+            egressPoller.stop(); checkPoller.stop();
         } else {
             statusPoller.resume(); trafficPoller.resume();
+            egressPoller.resume(); checkPoller.resume();
             loadActiveProfile(); loadProfileList();
         }
     });
