@@ -5,7 +5,6 @@
  #   1. Service Status (state light + uptime + pid + start/stop/restart + open UI)
  #   2. Active Profile (name + nodes + last_update + switch / refresh / health check)
  #   3. Realtime Metrics (4 cards: ↑/↓ rate, conns, mem) — 2s poll
- #   4. Recent Log Tail (textarea readonly)                — 5s poll
  #
  # All realtime data goes through /api/mihomo/* — vanilla JS, no framework.
 #}
@@ -78,19 +77,6 @@
         font-size: 12px;
         color: #888;
         text-transform: uppercase;
-    }
-    .mihomo-log {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        height: 220px;
-        font-family: monospace;
-        font-size: 12px;
-        background: #f5f5f5;
-        color: #333;
-        border: 1px solid #ccc;
-        resize: vertical;
-        box-sizing: border-box;
     }
     .mihomo-banner {
         margin-bottom: 12px;
@@ -252,18 +238,6 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-{# 4. Recent Log Tail #}
-<div class="mihomo-card">
-    <div class="card-header">
-        <span class="card-icon fa fa-file-text-o"></span>
-        <span class="card-title">最近日志</span>
-        <span style="font-weight:normal;color:#999;font-size:12px;margin-left:8px;">最近 30 行</span>
-    </div>
-    <div class="card-body" style="padding-top:10px;">
-        <textarea class="mihomo-log" id="log-tail" readonly></textarea>
     </div>
 </div>
 
@@ -523,20 +497,12 @@
         document.getElementById('metric-memory').textContent      = fmtBytes(j.memory);
     });
 
-    // ----- log tail -----
-    var logPoller = poller('/api/mihomo/dashboard/logs?lines=30', 5000, function(j) {
-        var ta = document.getElementById('log-tail');
-        var atBottom = (ta.scrollTop + ta.clientHeight) >= (ta.scrollHeight - 4);
-        ta.value = j.logs || '';
-        if (atBottom) ta.scrollTop = ta.scrollHeight;
-    });
-
     // ----- pause when hidden -----
     document.addEventListener('visibilitychange', function() {
         if (document.hidden) {
-            statusPoller.stop(); trafficPoller.stop(); logPoller.stop();
+            statusPoller.stop(); trafficPoller.stop();
         } else {
-            statusPoller.resume(); trafficPoller.resume(); logPoller.resume();
+            statusPoller.resume(); trafficPoller.resume();
             loadActiveProfile(); loadProfileList();
         }
     });
