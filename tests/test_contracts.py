@@ -70,6 +70,14 @@ class MihomoContractsTest(unittest.TestCase):
         self.assertNotIn("act_toggle_full_help", view)
         self.assertNotIn("settings-full-help-toggle", view)
 
+    def test_settings_full_help_toggle_is_scoped_per_sub_form(self):
+        view = read("src/opnsense/mvc/app/views/OPNsense/Mihomo/configuration.volt")
+        self.assertIn("bindSettingsScopedFullHelp", view)
+        self.assertIn("$toggle.off('click').on('click.mihomoFullHelp'", view)
+        self.assertIn("event.stopImmediatePropagation()", view)
+        self.assertIn("$form.find('[data-for*=\"help_for\"]')", view)
+        self.assertIn("sessionStorage.removeItem('all_help_preset')", view)
+
     def test_codemirror_assets_deployed_and_cleaned(self):
         install = read("install.sh")
         uninstall = read("uninstall.sh")

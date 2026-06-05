@@ -492,6 +492,60 @@ $(function() {
         });
     }
     loadSettings();
+    bindSettingsScopedFullHelp();
+    window.setTimeout(bindSettingsScopedFullHelp, 0);
+
+    // OPNsense core full-help toggles are page-wide. The Settings tab renders
+    // six base_form instances, so scope each generated toggle to its own form.
+    function bindSettingsScopedFullHelp() {
+        if (window.sessionStorage) {
+            sessionStorage.removeItem('all_help_preset');
+        }
+        $('#settings form[id^="frm_"]').each(function() {
+            var form = this;
+            var $form = $(form);
+            var $toggle = $form.find('[id^="show_all_help_"]').first();
+            if (!$toggle.length) return;
+            $toggle.off('click').on('click.mihomoFullHelp', function(event) {
+                toggleSettingsFormHelp($form, $toggle, form.id, event);
+            });
+            if (!$toggle.data('mihomoScopedFullHelp')) {
+                $toggle.data('mihomoScopedFullHelp', true);
+                $toggle[0].addEventListener('click', function(event) {
+                    toggleSettingsFormHelp($form, $toggle, form.id, event);
+                }, true);
+            }
+            setSettingsFormHelp($form, readSettingsFullHelpPreset(form.id));
+        });
+    }
+    function toggleSettingsFormHelp($form, $toggle, formId, event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        var enabled = !$toggle.hasClass('fa-toggle-on');
+        writeSettingsFullHelpPreset(formId, enabled);
+        setSettingsFormHelp($form, enabled);
+    }
+    function setSettingsFormHelp($form, enabled) {
+        $form.find('[id^="show_all_help_"]').first()
+            .toggleClass('fa-toggle-on', enabled)
+            .toggleClass('fa-toggle-off', !enabled)
+            .toggleClass('text-success', enabled)
+            .toggleClass('text-danger', !enabled);
+        $form.find('[data-for*="help_for"]')
+            .toggleClass('show', enabled)
+            .toggleClass('hidden', !enabled);
+    }
+    function settingsFullHelpPresetKey(formId) {
+        return 'mihomo.settings.fullHelp.' + formId;
+    }
+    function readSettingsFullHelpPreset(formId) {
+        return window.sessionStorage && sessionStorage.getItem(settingsFullHelpPresetKey(formId)) === '1';
+    }
+    function writeSettingsFullHelpPreset(formId, enabled) {
+        if (window.sessionStorage) {
+            sessionStorage.setItem(settingsFullHelpPresetKey(formId), enabled ? '1' : '0');
+        }
+    }
 
     $('#btn-save-settings').click(function() {
         var $msg = $('#settings-save-msg');
